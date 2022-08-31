@@ -4,7 +4,7 @@ from nltk.corpus import stopwords
 from torch.utils.data import DataLoader
 from utils import *
 # from model import Model
-from distributed_model import LSTMModelML
+from distributed_model import LSTMModelML, LinearModelML
 from tqdm import tqdm
 import os
 import numpy
@@ -66,6 +66,8 @@ def get_args():
 
     # YLP
     parser.add_argument('--num-layer', type=int, default=3)
+    parser.add_argument('--model', type=str, default='lstmal')
+    
     args = parser.parse_args()
 
     try:
@@ -154,18 +156,19 @@ def train(model, ld, epoch):
         
         #emb_ae, emb_as, l1_ae, l1_as, l2_ae, l2_as = round(tot_loss[0]/(step+1), 4), round(tot_loss[1]/(step+1), 4), round(tot_loss[2]/(step+1), 4), round(tot_loss[3]/(step+1), 4), round(tot_loss[4]/(step+1), 4), round(tot_loss[5]/(step+1), 4),
 
-        #b.set_description(f'Train {epoch} | Acc {100*cor/num} ({cor}/{num}) | EMB {emb_ae} + {emb_as} | L1 {l1_ae} + {l1_as} | L2 {l2_ae} + {l2_as}')
-        b.set_description(f'Train {epoch} | Acc {100*cor/num} ({cor}/{num})')
+        #b.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num}) | EMB {emb_ae} + {emb_as} | L1 {l1_ae} + {l1_as} | L2 {l2_ae} + {l2_as}')
+        b.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
     
-    train_acc = 100*cor/num
+    train_acc = cor/num
     train_loss = numpy.sum(tot_loss, axis=0)
     model.history["train_acc"].append(train_acc)
     model.history["train_loss"].append(train_loss)
     print(train_loss)
+    print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
     #print(numpy.array(tot_loss).shape)
     #for idx, (loss_ae, loss_as) in enumerate(tot_loss):
     #    print(f'layer{idx} loss {loss_ae}+{loss_as}')     
-    # print('Train Epoch', epoch, 'Acc', 100*cor/num, 'Loss', tot_loss/len(ld))
+    # print('Train Epoch', epoch, 'Acc', cor/num, 'Loss', tot_loss/len(ld))
 
 #def test(model, ld, epoch, best_acc, ckpt, shortcut=None):
 def test(model, ld, shortcut=None):
@@ -177,9 +180,9 @@ def test(model, ld, shortcut=None):
         pred = model.inference(x, shortcut)
         cor += (pred.argmax(-1) == y).sum().item()
         num += x.size(0)
-        #b.set_description(f'Acc {100*cor/num} ({cor}/{num})')
+        #b.set_description(f'Acc {cor/num} ({cor}/{num})')
 
-    return 100*cor/num
+    return cor/num
 
 def predicting_for_sst(args, model, vocab):
 
@@ -209,7 +212,12 @@ def main():
     args = get_args()
     train_loader, test_loader, class_num, vocab = get_data(args)
     word_vec = get_word_vector(vocab, args.word_vec)
-    model = LSTMModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
+    path_name = f"{args.dataset}_{args.model}_l{str(args.num_layer)}"
+    
+    if args.model == 'lstmal':
+        model = LSTMModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
+    elif args.model == 'linearal':
+        model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
     model = model.cuda()
 
     print('Start Training')
@@ -220,10 +228,10 @@ def main():
         for layer in range(model.num_layer):
             result = test(model, test_loader, shortcut=layer+1)
             valid_acc.append(result)
-            print(f'Test Epoch{epoch} layer{layer} Acc{result}')
+            print(f'Test Epoch{epoch} layer{layer} Acc {result}')
             if result >= best_acc:
                 best_acc = result
-                torch.save(model.state_dict(), args.save_dir+f'/{args.dataset}.pt')
+                torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
         model.history["valid_acc"].append(valid_acc)
     
 
@@ -232,10 +240,12 @@ def main():
     print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
     print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
     print('train_acc', numpy.array(model.history["train_acc"]).shape)
-    plotResult(model,'result/lstmal_l'+str(args.num_layer))
+    
+    
+    plotResult(model,'result/'+ path_name)
     
     if args.dataset == 'sst2':
-        model.load_state_dict(torch.load(args.save_dir+f'/{args.dataset}.pt'))
+        model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
         predicting_for_sst(args, model, vocab)
 
     
