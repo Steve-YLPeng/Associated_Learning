@@ -184,7 +184,7 @@ def main():
 
     print('Start Training')
 
-    for i in range(20):
+    for i in range(args.epoch):
         train(model, train_loader, i)
         best_acc = test(model, test_loader, i, best_acc, args.save_dir+f'/{args.dataset}.pt')
 

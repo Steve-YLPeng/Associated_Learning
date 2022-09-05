@@ -9,10 +9,10 @@ from torch.nn import ModuleList
 class AE(nn.Module):
     
     ############################################
-    # g:    Forward function for input Y 
-    #        (Encoder of AutoEncoder)
-    # h:    Decoder of AutoEncoder
-    # cri:  Loss function for AutoEncoder loss
+    #   g: Forward function for input Y 
+    #       (Encoder of AutoEncoder)
+    #   h: Decoder of AutoEncoder
+    # cri: Loss function for AutoEncoder loss
     ############################################
     def __init__(self, inp_dim, out_dim, cri='ce'):
         super().__init__()
@@ -49,9 +49,9 @@ class AE(nn.Module):
 class ENC(nn.Module):
     
     ############################################
-    # f:    Forward function for input X
-    # b:    Bridge function
-    # cri:  Loss function for associated loss
+    #   f: Forward function for input X
+    #   b: Bridge function
+    # cri: Loss function for associated loss
     ############################################
     def __init__(self, inp_dim, out_dim, lab_dim=128, f='emb', n_heads=4, word_vec=None):
         super().__init__()
@@ -84,7 +84,9 @@ class ENC(nn.Module):
     
     def forward(self, x, tgt, mask=None, h=None):
 
-        if self.mode == 'emb' or self.mode == 'linear' :
+        if self.mode == 'emb' :
+            enc_x = self.f(x.long())
+        elif self.mode == 'linear' :
             enc_x = self.f(x)
         elif self.mode == 'lstm':
             enc_x, (h, c) = self.f(x, h)
@@ -239,6 +241,7 @@ class TransModel(nn.Module):
         self.l2 = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
         self.losses = [0.0] * 6
         self.class_num = class_num
+        
     def forward(self, x, y):
 
         mask = self.get_mask(x)
@@ -312,6 +315,92 @@ class LSTMModel(nn.Module):
     
     
 ### YLP: multi-layer version of al
+
+class TransformerModelML(nn.Module):    
+    def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
+        super().__init__()
+        
+        self.num_layer = num_layer
+        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            if idx == 0:
+                layer = EMBLayer(vocab_size, lab_dim, emb_dim, lr = 0.001, class_num=class_num, word_vec=word_vec)
+            #elif idx == 1:
+            #    layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
+            else:
+                layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
+            layers.append(layer)
+        
+        self.l1_dim = l1_dim
+        self.losses = [0.0] * (num_layer*2)
+        self.class_num = class_num
+        self.layers = layers     
+        
+    def forward(self, x, y):
+        
+        layer_loss = []
+        mask = self.get_mask(x)
+        y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx == 0:
+                x_out, y_out, ae_out, as_out, _ = layer(x, y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+            else:
+                x_out, y_out, ae_out, as_out, mask = layer(x_out, y_out, mask)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+        return layer_loss
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx == 0:
+                x_out, y_out, ae_out, as_out, _ = layer(x, y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+            else:
+                x_out, y_out, ae_out, as_out, [h, _] = layer(x_out, y_out)
+                x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+        return layer_loss
+    
+    def get_mask(self, x):
+        pad_mask = ~(x == 0)
+        return pad_mask.cuda()
+    
+    def inference(self, x, len_path=None):
+        
+        mask = self.get_mask(x)
+        
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        for idx in range(len_path):
+            if idx==0: # embed
+                x_out = self.layers[idx].enc.f(x.long())          
+            else:
+                x_out = self.layers[idx].enc.f(x_out, mask)
+                     
+        # bridge        
+        if len_path == 1:
+            x_out = x_out.mean(1)  
+        else:
+            denom = torch.sum(mask, -1, keepdim=True)
+            x_out = torch.sum(x_out * mask.unsqueeze(-1), dim=1) / denom
+            
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+            
+        return y_out
+    
+    
 class LSTMModelML(nn.Module):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__()
@@ -361,7 +450,7 @@ class LSTMModelML(nn.Module):
         
         for idx in range(len_path):
             if idx==0:
-                x_out = self.layers[idx].enc.f(x)
+                x_out = self.layers[idx].enc.f(x.long())
                   
                 
             elif idx==1:
@@ -434,7 +523,7 @@ class LinearModelML(nn.Module):
         
         for idx in range(len_path):
             if idx==0:
-                x_out = self.layers[idx].enc.f(x)
+                x_out = self.layers[idx].enc.f(x.long())
                 #print("embed out", x_out.shape)
                 x_out = x_out.mean(1)
                 #print("embed out", _out.shape)
