@@ -122,12 +122,12 @@ class ENC(nn.Module):
 ### AL layers definition
 
 class EMBLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, class_num=None, word_vec=None):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, class_num=None, word_vec=None, ae_cri='ce'):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='emb', word_vec=word_vec)
         assert class_num is not None
-        self.ae = AE(class_num, lab_dim, cri='ce')
+        self.ae = AE(class_num, lab_dim, cri=ae_cri)
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
@@ -137,22 +137,27 @@ class EMBLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
+        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, mask = self.enc(x, tgt, mask, h)
         enc_loss.backward()
+        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
 
 class TransLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse'):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='trans')
-        self.ae = AE(lab_dim, lab_dim, cri='mse')
+        if out_dim == None:
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri)
+        else:
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri)
 
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=0.0005)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
@@ -162,22 +167,27 @@ class TransLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
+        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
         enc_loss.backward()
+        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, mask        
 
 class LSTMLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse'):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='lstm')
-        self.ae = AE(lab_dim, lab_dim, cri='mse')
+        if out_dim == None:
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri)
+        else:
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri)
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
@@ -187,12 +197,14 @@ class LSTMLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
+        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
         enc_loss.backward()
+        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
         (h, c) = hidden
         h = h.reshape(2, x.size(0), -1)
@@ -201,11 +213,14 @@ class LSTMLayer(nn.Module):
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
 
 class LinearLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse'):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='linear')
-        self.ae = AE(lab_dim, lab_dim, cri='mse')
+        if out_dim == None:
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri)
+        else:
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri)
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
@@ -215,12 +230,14 @@ class LinearLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
+        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, _, _ = self.enc(x, tgt)
         enc_loss.backward()
+        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
         #(h, c) = hidden
         #h = h.reshape(2, x.size(0), -1)
@@ -229,8 +246,12 @@ class LinearLayer(nn.Module):
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss
 
 
-### AL models definition
-
+###########################################################
+# Definition of AL text classification models. 
+# models:   
+#   TransModel, LSTMModel, 
+#   TransformerModelML, LSTMModelML, LinearModelML
+###########################################################
 class TransModel(nn.Module):
     def __init__(self, vocab_size, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__()
@@ -312,8 +333,7 @@ class LSTMModel(nn.Module):
         pred = self.emb.ae.h(_out)
 
         return pred
-    
-    
+       
 ### YLP: multi-layer version of al
 
 class TransformerModelML(nn.Module):    
@@ -333,6 +353,7 @@ class TransformerModelML(nn.Module):
             layers.append(layer)
         
         self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
         self.losses = [0.0] * (num_layer*2)
         self.class_num = class_num
         self.layers = layers     
@@ -418,6 +439,7 @@ class LSTMModelML(nn.Module):
             layers.append(layer)
         
         self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
         self.losses = [0.0] * (num_layer*2)
         self.class_num = class_num
         self.layers = layers     
@@ -492,6 +514,7 @@ class LinearModelML(nn.Module):
             layers.append(layer)
         
         self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
         self.losses = [0.0] * (num_layer*2)
         self.class_num = class_num
         self.layers = layers     
@@ -537,21 +560,70 @@ class LinearModelML(nn.Module):
             
         return y_out
 
-# model = LSTMModel(vocab_size=1000, emb_dim=40, l1_dim=40, lr=0.001, class_num=4)
 
-# x = torch.randint(0, 900, size=(64, 15))
-# y = torch.randint(0, 3, size=(64, ))
+###########################################################
+# Definition of AL regression models. 
+# models: 
+#   LinearALReg, 
+###########################################################
 
-# losses = model(x, y)
+class LinearALRegress(nn.Module): 
+    
+    def __init__(self, num_layer, feature_dim, target_dim, l1_dim, lr, lab_dim=128):
+        super().__init__()
+        
+        self.num_layer = num_layer
+        self.history = {"train_out":[],"valid_out":[],"train_loss":[]}        
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            if idx == 0:
+                layer = LinearLayer(inp_dim=feature_dim, out_dim=target_dim, 
+                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr)
+            else:
+                layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
+            layers.append(layer)
+        
+        self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
+        self.losses = [0.0] * (num_layer*2)
+        self.target_dim = target_dim
+        self.layers = layers     
 
-# pred = model.inference(x)
 
-# model = TransModel(vocab_size=1000, emb_dim=40, l1_dim=40, lr=0.001, class_num=4)
-
-# x = torch.randint(0, 900, size=(64, 15))
-# mask = torch.ones_like(x)
-# y = torch.randint(0, 3, size=(64, ))
-
-# losses = model(x, y, mask)
-
-# pred = model.inference(x, mask)
+    def forward(self, x, y):
+        
+        layer_loss = []
+        #y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx == 0:
+                x_out, y_out, ae_out, as_out = layer(x, y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+            else:
+                x_out, y_out, ae_out, as_out = layer(x_out, y_out)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+        return layer_loss
+    
+    
+    def inference(self, x, len_path=None):
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        for idx in range(len_path):
+            if idx==0:
+                x_out = self.layers[idx].enc.f(x)
+            else:
+                x_out = self.layers[idx].enc.f(x_out)    
+            
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+            
+        return y_out

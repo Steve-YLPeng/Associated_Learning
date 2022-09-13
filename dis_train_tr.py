@@ -128,9 +128,10 @@ def train(model, ld, epoch):
         cor += (pred.argmax(-1) == y).sum().item()
         num += x.size(0)
         
-        emb_ae, emb_as, l1_ae, l1_as, l2_ae, l2_as = round(tot_loss[0]/(step+1), 4), round(tot_loss[1]/(step+1), 4), round(tot_loss[2]/(step+1), 4), round(tot_loss[3]/(step+1), 4), round(tot_loss[4]/(step+1), 4), round(tot_loss[5]/(step+1), 4),
+        #emb_ae, emb_as, l1_ae, l1_as, l2_ae, l2_as = round(tot_loss[0]/(step+1), 4), round(tot_loss[1]/(step+1), 4), round(tot_loss[2]/(step+1), 4), round(tot_loss[3]/(step+1), 4), round(tot_loss[4]/(step+1), 4), round(tot_loss[5]/(step+1), 4),
+        emb_ae, emb_as, l1_ae, l1_as, l2_ae, l2_as = tot_loss[0], tot_loss[1], tot_loss[2], tot_loss[3], tot_loss[4], tot_loss[5],
 
-        b.set_description(f'Train {epoch} | Acc {100*cor/num} ({cor}/{num}) | EMB {emb_ae} + {emb_as} | L1 {l1_ae} + {l1_as} | L2 {l2_ae} + {l2_as}')
+        b.set_description(f'Train {epoch} | Acc {cor/num}| L1 {l1_ae} + {l1_as} | L2 {l2_ae} + {l2_as}')
 
 def predicting_for_sst(args, model, vocab):
 

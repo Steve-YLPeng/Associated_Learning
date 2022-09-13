@@ -89,6 +89,24 @@ def create_vocab(corpus, vocab_size=30000):
 
     return vocab_to_int
 
+class StructDataset(Dataset):
+    def __init__(self, feature, target):
+        super().__init__()
+        self.x = feature.to_numpy()
+        self.y = target.to_numpy()
+        
+    def collate(self, batch):
+        x = torch.tensor([x for x,y in batch], dtype=torch.float32)
+        y = [y for x,y in batch]
+        y = torch.tensor(y, dtype=torch.float32)
+        return x, y    
+    
+    def __getitem__(self, idx):
+        return self.x[idx], self.y[idx]
+
+    def __len__(self):
+        return len(self.x)
+
 class Textset(Dataset):
     def __init__(self, text, label, vocab, max_len):
         super().__init__()
