@@ -1,6 +1,7 @@
 import argparse
 from datasets import load_dataset
 from nltk.corpus import stopwords
+import torch
 from torch.utils.data import DataLoader
 from torch.nn.functional import mse_loss
 from utils import *
@@ -14,22 +15,23 @@ import matplotlib.pyplot as plt
 stop_words = set(stopwords.words('english'))
 
 def plotResult(model, save_filename, task):
+    
+    history = model.history
+    # plot epoch loss
+    epoch_layers_loss = numpy.array(history["train_loss"]).T
+    epoch_layers_ae_loss = epoch_layers_loss[0,:,:]
+    epoch_layers_as_loss = epoch_layers_loss[1,:,:]
+    for idx,loss in enumerate(epoch_layers_ae_loss):
+        plt.plot(loss, label='loss L'+str(idx))
+    plt.legend()
+    plt.savefig(save_filename+"_ae_loss.png")
+    plt.show()
+    for idx,loss in enumerate(epoch_layers_as_loss):
+        plt.plot(loss, label='loss L'+str(idx))
+    plt.legend()
+    plt.savefig(save_filename+"_as_loss.png")
+    plt.show()
     if task == "text":
-        history = model.history
-        # plot epoch loss
-        epoch_layers_loss = numpy.array(history["train_loss"]).T
-        epoch_layers_ae_loss = epoch_layers_loss[0,:,:]
-        epoch_layers_as_loss = epoch_layers_loss[1,:,:]
-        for idx,loss in enumerate(epoch_layers_ae_loss):
-            plt.plot(loss, label='loss L'+str(idx))
-        plt.legend()
-        plt.savefig(save_filename+"_ae_loss.png")
-        plt.show()
-        for idx,loss in enumerate(epoch_layers_as_loss):
-            plt.plot(loss, label='loss L'+str(idx))
-        plt.legend()
-        plt.savefig(save_filename+"_as_loss.png")
-        plt.show()
         # plot epoch acc
         epoch_valid_acc = numpy.array(history["valid_acc"]).T
         for idx,acc in enumerate(epoch_valid_acc):
@@ -38,7 +40,16 @@ def plotResult(model, save_filename, task):
         plt.legend()
         plt.savefig(save_filename+"_acc.png")
         plt.show()
-
+    if task == "regression":
+        epoch_valid_out = numpy.array(history["valid_out"]).T
+        for idx,acc in enumerate(epoch_valid_out):
+            plt.plot(acc, label='valid out_loss L'+str(idx+1))
+        plt.plot(history["train_out"], "k", label='train_out' )
+        plt.legend()
+        plt.savefig(save_filename+"_out.png")
+        plt.show()
+        
+        
 def get_args():
 
     parser = argparse.ArgumentParser('AL training')
@@ -53,7 +64,7 @@ def get_args():
 
     parser.add_argument('--vocab-size', type=int, help='vocab-size', default=30000)
     parser.add_argument('--max-len', type=int, help='max input length', default=200)
-    parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 'paint'])
+    parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 'paint','ailerons'])
     parser.add_argument('--word-vec', type=str, default='glove')
 
     # training param
@@ -100,6 +111,23 @@ def get_data(args):
         vocab = create_vocab(corpus)
         clean_train, clean_test, train_label, test_label = train_test_split(text, label, test_size=0.2)
     
+    elif args.dataset == 'ailerons':
+        from mit_d3m import load_dataset
+        import pandas as pd
+        from sklearn.model_selection import train_test_split
+        args.task = "regression"
+        args.feature_dim = 40
+        target_num = 1
+        dataset = load_dataset('LL0_296_ailerons')
+
+        col_feature = dataset.X.columns[1:]
+        #col_target= dataset.y.columns[:]
+
+        y = dataset.y.to_frame()
+        x = dataset.X[col_feature]
+        x = x.fillna(0)
+        feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        
     elif args.dataset == 'paint':
         import pandas as pd
         from sklearn.model_selection import train_test_split
@@ -107,8 +135,9 @@ def get_data(args):
         args.feature_dim = 125
         target_num = -1
         df = pd.read_csv('./2022-train-v2.csv')
-        #col_target = df.columns[:6]
-        col_target = df.columns[0:1]
+
+        c = 0
+        col_target = df.columns[c:c+1]
         col_feature1 = df.columns[6:33].to_list() # 27 cols
         col_feature2 = df.columns[33:43].to_list() # 10 cols
         col_feature3 = df.columns[43:103].to_list() # 60 cols
@@ -210,10 +239,10 @@ def train(model, data_loader, epoch, task="text"):
             out_loss += mse_loss(pred, y, reduction='sum')
             num += x.size(0)
             
-            data_loader.set_description(f'Train {epoch} | out_loss {out_loss/num}')
+            data_loader.set_description(f'Train {epoch} | out_loss {torch.sqrt(out_loss/num)}')
         
         #train_acc = cor/num
-        train_out = out_loss/num
+        train_out = torch.sqrt(out_loss/num).item()
         train_loss = numpy.sum(tot_loss, axis=0)
         model.history["train_out"].append(train_out)
         model.history["train_loss"].append(train_loss)
@@ -243,7 +272,7 @@ def test(model, data_loader, shortcut=None, task="text"):
             out_loss += mse_loss(pred, y, reduction='sum')
             num += x.size(0)
 
-        return out_loss/num
+        return torch.sqrt(out_loss/num).item()
 
 def predicting_for_sst(args, model, vocab):
 

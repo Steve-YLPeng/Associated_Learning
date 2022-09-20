@@ -77,7 +77,9 @@ class ENC(nn.Module):
         elif f == 'linear':
             self.f = nn.Sequential(
                 nn.Linear(inp_dim, out_dim),
-                nn.Tanh()
+                nn.ELU()
+                #nn.Tanh()
+                #nn.Sigmoid()
             )
 
         self.cri = nn.MSELoss()
@@ -598,6 +600,8 @@ class LinearALRegress(nn.Module):
         # forward function also update
         for idx,layer in enumerate(self.layers):
             if idx == 0:
+                #print(x.shape)
+                #print(y.shape)
                 x_out, y_out, ae_out, as_out = layer(x, y)
                 layer_loss.append([ae_out.item(), as_out.item()])
                 
