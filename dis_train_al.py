@@ -4,6 +4,7 @@ from nltk.corpus import stopwords
 import torch
 from torch.utils.data import DataLoader
 from torch.nn.functional import mse_loss
+from torchmetrics.functional import r2_score
 from utils import *
 # from model import Model
 from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress
@@ -49,6 +50,15 @@ def plotResult(model, save_filename, task):
         plt.savefig(save_filename+"_out.png")
         plt.show()
         
+        epoch_valid_r2 = numpy.array(history["valid_r2"]).T
+        for idx,acc in enumerate(epoch_valid_r2):
+            plt.plot(acc, label='valid_r2 L'+str(idx+1))
+        
+        plt.plot(history["train_r2"], "k", label='train_r2' )
+        plt.legend()
+        plt.savefig(save_filename+"_r2.png")
+        plt.show()
+        
         
 def get_args():
 
@@ -64,7 +74,8 @@ def get_args():
 
     parser.add_argument('--vocab-size', type=int, help='vocab-size', default=30000)
     parser.add_argument('--max-len', type=int, help='max input length', default=200)
-    parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 'paint','ailerons'])
+    parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 
+                                                                           'paint','ailerons',"criteo","ca_housing"])
     parser.add_argument('--word-vec', type=str, default='glove')
 
     # training param
@@ -111,6 +122,62 @@ def get_data(args):
         vocab = create_vocab(corpus)
         clean_train, clean_test, train_label, test_label = train_test_split(text, label, test_size=0.2)
     
+    elif args.dataset ==  "ca_housing":
+        import pandas as pd
+        from sklearn.datasets import fetch_california_housing
+        from sklearn.model_selection import train_test_split
+        house_dataset = fetch_california_housing()
+
+        df = pd.DataFrame(
+            house_dataset.data,
+            columns=house_dataset.feature_names
+        )
+        df.loc[:,"Price"] = house_dataset.target
+
+        from sklearn.preprocessing import StandardScaler
+        scaler = StandardScaler()
+        df.loc[:,:] = scaler.fit_transform(df)
+        
+        col_feature = house_dataset.feature_names
+        col_target = ["Price"]
+
+        y = df[col_target]
+        x = df[col_feature]
+        x = x.fillna(0)
+        target_num = 1
+        args.feature_dim = 8
+        feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        
+    elif args.dataset == 'criteo':
+        import pandas as pd
+        from sklearn.model_selection import train_test_split
+        from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+        args.task = "regression"
+        args.feature_dim = 39
+        target_num = 1
+        col_target = ["label"]
+        col_dense = [f"I{i}" for i in range(1,14)]
+        col_sparse = [f"C{i}" for i in range(1,27)]
+        
+        df = pd.read_csv("criteo_small.csv")
+        
+        df[col_sparse] = df[col_sparse].fillna('-1', )
+        df[col_dense] = df[col_dense].fillna(0,)
+
+        for feat in col_sparse:
+            lbe = LabelEncoder()
+            df[feat] = lbe.fit_transform(df[feat])
+            
+        mms = MinMaxScaler(feature_range=(0,1))
+        df[col_dense] = mms.fit_transform(df[col_dense])
+        
+        y = df[col_target]
+        #x = df[col_dense + col_sparse]
+        x = df[col_dense]
+        args.feature_dim = 13
+        
+        feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        
     elif args.dataset == 'ailerons':
         from mit_d3m import load_dataset
         import pandas as pd
@@ -226,6 +293,7 @@ def train(model, data_loader, epoch, task="text"):
     elif task == "regression":
         model.train()
         out_loss, num, tot_loss = 0, 0, []
+        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         data_loader = tqdm(data_loader)
         for step, (x, y) in enumerate(data_loader):
             #print(x)
@@ -235,6 +303,8 @@ def train(model, data_loader, epoch, task="text"):
             tot_loss.append(losses)
                 
             pred = model.inference(x)
+            y_out = torch.cat((y_out, pred.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu()), 0)
             #cor += (pred.argmax(-1) == y).sum().item()
             out_loss += mse_loss(pred, y, reduction='sum')
             num += x.size(0)
@@ -242,12 +312,17 @@ def train(model, data_loader, epoch, task="text"):
             data_loader.set_description(f'Train {epoch} | out_loss {torch.sqrt(out_loss/num)}')
         
         #train_acc = cor/num
-        train_out = torch.sqrt(out_loss/num).item()
+        #train_out = torch.sqrt(out_loss/num).item()
+        train_out = mse_loss(y_out, y_tar).item()
+        train_r2 = r2_score(y_out, y_tar).item()
         train_loss = numpy.sum(tot_loss, axis=0)
         model.history["train_out"].append(train_out)
         model.history["train_loss"].append(train_loss)
-        print(train_loss)
-        print(f'Train Epoch{epoch} out_loss {train_out}')
+        model.history["train_r2"].append(train_r2)
+        #print(train_loss)
+        #loss = torch.sqrt(mse_loss(y_out, y_tar))
+        
+        print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
 
 def test(model, data_loader, shortcut=None, task="text"):
     if task == "text":
@@ -264,15 +339,21 @@ def test(model, data_loader, shortcut=None, task="text"):
     
     elif task == "regression":
         model.eval()
-        out_loss, num = 0, 0
+        out_loss, num, tot_loss = 0, 0, []
+        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         #data_loader = tqdm(data_loader)
         for x, y in data_loader:
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
+            y_out = torch.cat((y_out, pred.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu()), 0)
             out_loss += mse_loss(pred, y, reduction='sum')
             num += x.size(0)
-
-        return torch.sqrt(out_loss/num).item()
+            
+        valid_out = mse_loss(y_out, y_tar).item()
+        valid_r2 = r2_score(y_out, y_tar).item()
+        #return torch.sqrt(out_loss/num).item()
+        return valid_out, valid_r2
 
 def predicting_for_sst(args, model, vocab):
 
@@ -342,20 +423,26 @@ def main():
         print('train_acc', numpy.array(model.history["train_acc"]).shape)
         
     elif args.task == "regression":
-        best_loss = None
+        best_r2, best_layer = 0,-1
         for epoch in range(args.epoch):
             train(model, train_loader, epoch, task="regression")
-            valid_out = []
+            valid_out, valid_r2 = [],[]
+            
             for layer in range(model.num_layer):
-                result = test(model, test_loader, shortcut=layer+1, task="regression")
-                valid_out.append(result)
-                print(f'Test Epoch{epoch} layer{layer} out_loss {result}')
-                if best_loss == None:
-                    best_loss = result
-                if result < best_loss:
-                    best_loss = result
+                loss, r2 = test(model, test_loader, shortcut=layer+1, task="regression")
+                valid_out.append(loss)
+                valid_r2.append(r2)
+                print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
+                
+                if r2 > best_r2:
+                    best_r2 = r2
+                    best_layer = layer
                     torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
+                    
             model.history["valid_out"].append(valid_out)
+            model.history["valid_r2"].append(valid_r2)
+            
+        print(f'Best r2 {best_r2} at L{best_layer}' )
             
     plotResult(model,'result/'+ path_name, args.task)
     

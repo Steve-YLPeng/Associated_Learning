@@ -14,28 +14,49 @@ class AE(nn.Module):
     #   h: Decoder of AutoEncoder
     # cri: Loss function for AutoEncoder loss
     ############################################
-    def __init__(self, inp_dim, out_dim, cri='ce'):
+    def __init__(self, inp_dim, out_dim, cri='ce', act=None):
         super().__init__()
 
-        self.g = nn.Sequential(
-            nn.Linear(inp_dim, out_dim),
-            nn.Tanh()            
-        )
-
-        if cri == 'ce':
-            self.h = nn.Sequential(
-                nn.Linear(out_dim, inp_dim),
-                nn.Tanh()            
-            )
+        
+        if act == None:
+            self.g = nn.Sequential(
+                    nn.Linear(inp_dim, out_dim),
+                    nn.Tanh()            
+                )
+            if cri == 'ce':
+                self.h = nn.Sequential(
+                    nn.Linear(out_dim, inp_dim),
+                    nn.Tanh()            
+                )
+                self.cri = nn.CrossEntropyLoss()
+                
+            elif cri == 'mse':
+                self.h = nn.Sequential(
+                    nn.Linear(out_dim, inp_dim),
+                )
+                self.cri = nn.MSELoss()
+            
         else:
-            self.h = nn.Sequential(
-                nn.Linear(out_dim, inp_dim),
-            )
-
-        if cri == 'ce':
-            self.cri = nn.CrossEntropyLoss()
-        else:
+            if act[0] != None:
+                self.g = nn.Sequential(
+                    nn.Linear(inp_dim, out_dim),       
+                    act[0]    
+                )
+            else:
+                self.g = nn.Sequential(
+                    nn.Linear(inp_dim, out_dim),         
+                )
+            if act[1] != None:
+                self.h = nn.Sequential(
+                    nn.Linear(out_dim, inp_dim),
+                    act[1] 
+                )
+            else:
+                self.h = nn.Sequential(
+                    nn.Linear(out_dim, inp_dim), 
+                )
             self.cri = nn.MSELoss()
+            
         self.mode = cri
     
     def forward(self, x):
@@ -43,7 +64,7 @@ class AE(nn.Module):
         rec_x = self.h(enc_x)
         if self.mode == 'ce':
             return enc_x, self.cri(rec_x, x.argmax(1))
-        else:
+        elif self.mode == 'mse':
             return enc_x, self.cri(rec_x, x)
 
 class ENC(nn.Module):
@@ -77,8 +98,8 @@ class ENC(nn.Module):
         elif f == 'linear':
             self.f = nn.Sequential(
                 nn.Linear(inp_dim, out_dim),
-                nn.ELU()
-                #nn.Tanh()
+                #nn.ELU()
+                nn.Tanh()
                 #nn.Sigmoid()
             )
 
@@ -139,14 +160,14 @@ class EMBLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
-        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, mask = self.enc(x, tgt, mask, h)
         enc_loss.backward()
-        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
@@ -169,14 +190,14 @@ class TransLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
-        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
         enc_loss.backward()
-        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, mask        
@@ -199,14 +220,14 @@ class LSTMLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
-        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
         enc_loss.backward()
-        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
         (h, c) = hidden
         h = h.reshape(2, x.size(0), -1)
@@ -215,14 +236,14 @@ class LSTMLayer(nn.Module):
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
 
 class LinearLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse'):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='linear')
         if out_dim == None:
-            self.ae = AE(lab_dim, lab_dim, cri=ae_cri)
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
         else:
-            self.ae = AE(out_dim, lab_dim, cri=ae_cri)
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri, act=ae_act)
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
@@ -232,14 +253,14 @@ class LinearLayer(nn.Module):
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
         ae_loss.backward()
-        nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
         self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, _, _ = self.enc(x, tgt)
         enc_loss.backward()
-        nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
         self.enc_opt.step()
         #(h, c) = hidden
         #h = h.reshape(2, x.size(0), -1)
@@ -575,12 +596,12 @@ class LinearALRegress(nn.Module):
         super().__init__()
         
         self.num_layer = num_layer
-        self.history = {"train_out":[],"valid_out":[],"train_loss":[]}        
+        self.history = {"train_r2":[],"train_out":[],"valid_r2":[],"valid_out":[],"train_loss":[]}        
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=target_dim, 
-                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr)
+                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_act=[nn.Tanh(),None])
             else:
                 layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
