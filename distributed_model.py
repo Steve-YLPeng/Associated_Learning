@@ -55,7 +55,10 @@ class AE(nn.Module):
                 self.h = nn.Sequential(
                     nn.Linear(out_dim, inp_dim), 
                 )
-            self.cri = nn.MSELoss()
+            if cri == 'mse' :
+                self.cri = nn.MSELoss()
+            else :
+                self.cri = nn.CrossEntropyLoss()
             
         self.mode = cri
     
@@ -63,6 +66,8 @@ class AE(nn.Module):
         enc_x = self.g(x)
         rec_x = self.h(enc_x)
         if self.mode == 'ce':
+            #print("ae",rec_x)
+            #print("lab",x)
             return enc_x, self.cri(rec_x, x.argmax(1))
         elif self.mode == 'mse':
             return enc_x, self.cri(rec_x, x)
@@ -98,9 +103,16 @@ class ENC(nn.Module):
         elif f == 'linear':
             self.f = nn.Sequential(
                 nn.Linear(inp_dim, out_dim),
-                #nn.ELU()
-                nn.Tanh()
-                #nn.Sigmoid()
+                #nn.BatchNorm1d(out_dim),
+                #nn.ELU(),
+                nn.Tanh(),
+                #nn.Sigmoid(),
+                
+            )
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                #nn.ELU(),
+                nn.Tanh(),
             )
 
         self.cri = nn.MSELoss()
@@ -397,18 +409,6 @@ class TransformerModelML(nn.Module):
                 layer_loss.append([ae_out.item(), as_out.item()])
                 
         return layer_loss
-        # forward function also update
-        for idx,layer in enumerate(self.layers):
-            if idx == 0:
-                x_out, y_out, ae_out, as_out, _ = layer(x, y)
-                layer_loss.append([ae_out.item(), as_out.item()])
-                
-            else:
-                x_out, y_out, ae_out, as_out, [h, _] = layer(x_out, y_out)
-                x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
-                layer_loss.append([ae_out.item(), as_out.item()])
-                
-        return layer_loss
     
     def get_mask(self, x):
         pad_mask = ~(x == 0)
@@ -600,8 +600,10 @@ class LinearALRegress(nn.Module):
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
+                act = [nn.Tanh(),None]
+                #act = [None,None]
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=target_dim, 
-                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_act=[nn.Tanh(),None])
+                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_act=act)
             else:
                 layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
@@ -632,6 +634,69 @@ class LinearALRegress(nn.Module):
                 
         return layer_loss
     
+    
+    def inference(self, x, len_path=None):
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        for idx in range(len_path):
+            if idx==0:
+                x_out = self.layers[idx].enc.f(x)
+            else:
+                x_out = self.layers[idx].enc.f(x_out)    
+            
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+            
+        return y_out
+    
+class LinearALCLS(nn.Module):    
+    #def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
+    def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
+        super().__init__()
+        
+        self.num_layer = num_layer
+        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            if idx == 0:
+                act = [nn.Tanh(), nn.Tanh()]
+                #act = [nn.ELU(), nn.ELU()]
+                #act = [nn.Sigmoid(),nn.Sigmoid()]
+                #act = None 
+                layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
+                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
+            else:
+                layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr, ae_cri='mse')
+            layers.append(layer)
+        
+        self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
+        self.losses = [0.0] * (num_layer*2)
+        self.class_num = class_num
+        self.layers = layers     
+        
+    def forward(self, x, y):
+        
+        layer_loss = []
+        #print(y.shape)
+        y = torch.nn.functional.one_hot(y.view(-1).long(), self.class_num).float().to(y.device)
+        #print(y)
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx == 0:
+                x_out, y_out, ae_out, as_out = layer(x, y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+            else:
+                x_out, y_out, ae_out, as_out = layer(x_out, y_out)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+        return layer_loss
     
     def inference(self, x, len_path=None):
         # full path inference by default

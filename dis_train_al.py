@@ -1,5 +1,4 @@
 import argparse
-from datasets import load_dataset
 from nltk.corpus import stopwords
 import torch
 from torch.utils.data import DataLoader
@@ -7,7 +6,7 @@ from torch.nn.functional import mse_loss
 from torchmetrics.functional import r2_score
 from utils import *
 # from model import Model
-from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress
+from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress, LinearALCLS
 from tqdm import tqdm
 import os
 import numpy
@@ -32,7 +31,7 @@ def plotResult(model, save_filename, task):
     plt.legend()
     plt.savefig(save_filename+"_as_loss.png")
     plt.show()
-    if task == "text":
+    if task == "text" or task == "classification":
         # plot epoch acc
         epoch_valid_acc = numpy.array(history["valid_acc"]).T
         for idx,acc in enumerate(epoch_valid_acc):
@@ -70,7 +69,7 @@ def get_args():
     parser.add_argument('--label-emb', type=int,
                         help='label embedding dimension', default=128)
     parser.add_argument('--l1-dim', type=int,
-                        help='lstm1 hidden dimension', default=128)
+                        help='lstm1 hidden dimension', default=300)
 
     parser.add_argument('--vocab-size', type=int, help='vocab-size', default=30000)
     parser.add_argument('--max-len', type=int, help='max input length', default=200)
@@ -151,10 +150,10 @@ def get_data(args):
     elif args.dataset == 'criteo':
         import pandas as pd
         from sklearn.model_selection import train_test_split
-        from sklearn.preprocessing import LabelEncoder, MinMaxScaler
-        args.task = "regression"
+        from sklearn.preprocessing import LabelEncoder, MinMaxScaler,StandardScaler
+        args.task = "classification"
         args.feature_dim = 39
-        target_num = 1
+        class_num = 2
         col_target = ["label"]
         col_dense = [f"I{i}" for i in range(1,14)]
         col_sparse = [f"C{i}" for i in range(1,27)]
@@ -168,13 +167,17 @@ def get_data(args):
             lbe = LabelEncoder()
             df[feat] = lbe.fit_transform(df[feat])
             
-        mms = MinMaxScaler(feature_range=(0,1))
-        df[col_dense] = mms.fit_transform(df[col_dense])
+        #mms = MinMaxScaler(feature_range=(0,1))
+        #df[col_dense] = mms.fit_transform(df[col_dense])
+        scaler = StandardScaler()
+        df[col_dense] = scaler.fit_transform(df[col_dense])
+        
+        
         
         y = df[col_target]
-        #x = df[col_dense + col_sparse]
-        x = df[col_dense]
-        args.feature_dim = 13
+        x = df[col_dense + col_sparse]
+        #x = df[col_dense]
+        #args.feature_dim = 13
         
         feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
         
@@ -209,12 +212,18 @@ def get_data(args):
         col_feature2 = df.columns[33:43].to_list() # 10 cols
         col_feature3 = df.columns[43:103].to_list() # 60 cols
         col_feature4 = df.columns[103:].to_list() # 28 cols
+        
+        from sklearn.preprocessing import StandardScaler
+        scaler = StandardScaler()
+        df.loc[:,:] = scaler.fit_transform(df)
+        
         y = df[col_target]
         x = df[col_feature1 + col_feature2 + col_feature3 + col_feature4]
         x = x.fillna(0)
         feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
 
     else:
+        from datasets import load_dataset
         train_data = load_dataset(args.dataset, split='train')
         test_data = load_dataset(args.dataset, split='test')
 
@@ -258,16 +267,24 @@ def get_data(args):
 
         return train_loader, test_loader, class_num, vocab
     
-    elif args.task == "regression":
+    elif args.task == "regression" :
         trainset = StructDataset(feature_train, train_target)
         testset = StructDataset(feature_test, test_target)
         train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
         
         return train_loader, test_loader, target_num
+    
+    elif args.task == "classification":
+        trainset = StructDataset(feature_train, train_target)
+        testset = StructDataset(feature_test, test_target)
+        train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
+        test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
+        
+        return train_loader, test_loader, class_num
 
 def train(model, data_loader, epoch, task="text"):
-    if task == "text":
+    if task == "text" or task == "classification":
         model.train()
         cor, num, tot_loss = 0, 0, []
         data_loader = tqdm(data_loader)
@@ -278,7 +295,10 @@ def train(model, data_loader, epoch, task="text"):
             tot_loss.append(losses)
                 
             pred = model.inference(x)
-            cor += (pred.argmax(-1) == y).sum().item()
+            #print(pred.argmax(-1) ,y)
+            #print((pred.argmax(-1) == y).sum())
+            #print(x.size(0))
+            cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
             
             data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
@@ -325,14 +345,15 @@ def train(model, data_loader, epoch, task="text"):
         print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
 
 def test(model, data_loader, shortcut=None, task="text"):
-    if task == "text":
+    if task == "text" or task == "classification":
         model.eval()
         cor, num = 0, 0
         #data_loader = tqdm(data_loader)
         for x, y in data_loader:
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
-            cor += (pred.argmax(-1) == y).sum().item()
+            #cor += (pred.argmax(-1) == y).sum().item()
+            cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
 
         return cor/num
@@ -394,6 +415,11 @@ def main():
         elif args.model == 'transformeral':
             model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
     
+    elif args.task == "classification":
+        train_loader, test_loader, class_num  = get_data(args)
+        if args.model == 'linearal':
+            model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lr=args.lr)
+        
     elif args.task == "regression":
         train_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
@@ -403,13 +429,13 @@ def main():
 
     print('Start Training')
     
-    if args.task == "text":
+    if args.task == "text" or args.task == "classification":
         best_acc = 0
         for epoch in range(args.epoch):
-            train(model, train_loader, epoch)
+            train(model, train_loader, epoch, task=args.task)
             valid_acc = []
             for layer in range(model.num_layer):
-                result = test(model, test_loader, shortcut=layer+1)
+                result = test(model, test_loader, shortcut=layer+1, task=args.task)
                 valid_acc.append(result)
                 print(f'Test Epoch{epoch} layer{layer} Acc {result}')
                 if result >= best_acc:
