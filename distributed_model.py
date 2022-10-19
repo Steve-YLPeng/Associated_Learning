@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from transformer.encoder import TransformerEncoder
 from torch.nn import ModuleList
-
+from typing import List
 
 ### Layer component definition
 
@@ -104,13 +104,14 @@ class ENC(nn.Module):
             self.f = nn.Sequential(
                 nn.Linear(inp_dim, out_dim),
                 #nn.BatchNorm1d(out_dim),
-                #nn.ELU(),
-                nn.Tanh(),
+                nn.ELU(),
+                #nn.Tanh(),
                 #nn.Sigmoid(),
                 
             )
             self.b = nn.Sequential(
                 nn.Linear(out_dim, lab_dim),
+                #nn.BatchNorm1d(out_dim),
                 #nn.ELU(),
                 nn.Tanh(),
             )
@@ -656,7 +657,6 @@ class LinearALRegress(nn.Module):
         return y_out
     
 class LinearALCLS(nn.Module):    
-    #def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
     def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
         super().__init__()
         
@@ -665,9 +665,9 @@ class LinearALCLS(nn.Module):
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
-                act = [nn.Tanh(), nn.Tanh()]
+                #act = [nn.Tanh(), nn.Tanh()]
                 #act = [nn.ELU(), nn.ELU()]
-                #act = [nn.Sigmoid(),nn.Sigmoid()]
+                act = [nn.Tanh(),nn.Sigmoid()]
                 #act = None 
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
@@ -710,6 +710,79 @@ class LinearALCLS(nn.Module):
                 x_out = self.layers[idx].enc.f(x)
             else:
                 x_out = self.layers[idx].enc.f(x_out)    
+            
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+            
+        return y_out
+    
+class LinearALsideCLS(nn.Module):    
+    def __init__(self, num_layer, side_dim:List[int], class_num, l1_dim, lr, lab_dim=128):
+        super().__init__()
+        
+        assert num_layer == len(side_dim)
+        self.side_dim = side_dim
+        self.num_layer = num_layer
+        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            if idx == 0:
+                #act = [nn.Tanh(), nn.Tanh()]
+                #act = [nn.ELU(), nn.ELU()]
+                act = [nn.Tanh(),nn.Sigmoid()]
+                #act = None 
+                layer = LinearLayer(inp_dim=side_dim[0], out_dim=class_num, 
+                                    hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
+            else:
+                concat_dim = l1_dim + side_dim[idx]
+
+                layer = LinearLayer(inp_dim=concat_dim, hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='mse')
+            layers.append(layer)
+            
+        self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
+        self.losses = [0.0] * (num_layer*2)
+        self.class_num = class_num
+        self.layers = layers  
+    
+    def sidedata(self, x):
+        return torch.split(x, self.side_dim, -1)
+    
+    def forward(self, x, y):
+        
+        layer_loss = []
+        #print(y.shape)
+        y = torch.nn.functional.one_hot(y.view(-1).long(), self.class_num).float().to(y.device)
+        x_side = self.sidedata(x)
+        
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx == 0:
+                x_out, y_out, ae_out, as_out = layer(x_side[idx], y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+            else:
+                x_cat = torch.cat((x_out, x_side[idx]), dim=-1)
+                x_out, y_out, ae_out, as_out = layer(x_cat, y_out)
+                layer_loss.append([ae_out.item(), as_out.item()])
+                
+        return layer_loss        
+    
+    def inference(self, x, len_path=None):
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        x_side = self.sidedata(x)
+        for idx in range(len_path):
+            if idx==0:
+                x_out = self.layers[idx].enc.f(x_side[idx])
+            else:
+                x_cat = torch.cat((x_out, x_side[idx]), dim=-1)
+                x_out = self.layers[idx].enc.f(x_cat)    
             
         y_out = self.layers[len_path-1].enc.b(x_out)
         

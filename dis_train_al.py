@@ -6,7 +6,7 @@ from torch.nn.functional import mse_loss
 from torchmetrics.functional import r2_score
 from utils import *
 # from model import Model
-from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress, LinearALCLS
+from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress, LinearALCLS, LinearALsideCLS
 from tqdm import tqdm
 import os
 import numpy
@@ -14,6 +14,37 @@ import matplotlib.pyplot as plt
 
 stop_words = set(stopwords.words('english'))
 
+def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):
+    from sklearn.metrics import confusion_matrix    
+    import seaborn as sn
+    import pandas as pd
+
+    labels = label_name
+    cm = confusion_matrix(y_true, y_pred)
+    print(cm)
+    
+    df_cm = pd.DataFrame(cm, range(len(cm)), range(len(cm)))
+    # plt.figure(figsize=(10,7))
+    #sn.set(font_scale=1.4) # for label size
+    sn.heatmap(df_cm, annot=True,vmin=0, vmax=1000) # font size
+    plt.savefig(save_filename+"_cm.png")
+    plt.show()
+    return
+    
+    
+    
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    cax = ax.matshow(cm)
+    plt.title(save_filename)
+    fig.colorbar(cax,)
+    #ax.set_xticklabels([''] + labels)
+    #ax.set_yticklabels([''] + labels)
+    plt.xlabel('Pred')
+    plt.ylabel('True')
+    plt.savefig(save_filename+"_cm.png")
+    #plt.show()
+    
 def plotResult(model, save_filename, task):
     
     history = model.history
@@ -37,6 +68,7 @@ def plotResult(model, save_filename, task):
         for idx,acc in enumerate(epoch_valid_acc):
             plt.plot(acc, label='valid acc L'+str(idx+1))
         plt.plot(history["train_acc"], "k", label='train_acc' )
+        #plt.ylim(0.9, 1.0)
         plt.legend()
         plt.savefig(save_filename+"_acc.png")
         plt.show()
@@ -74,7 +106,7 @@ def get_args():
     parser.add_argument('--vocab-size', type=int, help='vocab-size', default=30000)
     parser.add_argument('--max-len', type=int, help='max input length', default=200)
     parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 
-                                                                           'paint','ailerons',"criteo","ca_housing"])
+                                                                           'paint','ailerons',"criteo","ca_housing","kdd99"])
     parser.add_argument('--word-vec', type=str, default='glove')
 
     # training param
@@ -158,7 +190,8 @@ def get_data(args):
         col_dense = [f"I{i}" for i in range(1,14)]
         col_sparse = [f"C{i}" for i in range(1,27)]
         
-        df = pd.read_csv("criteo_small.csv")
+        #df = pd.read_csv("criteo_small.csv")
+        df = pd.read_csv("criteo_medium.csv")
         
         df[col_sparse] = df[col_sparse].fillna('-1', )
         df[col_dense] = df[col_dense].fillna(0,)
@@ -167,17 +200,54 @@ def get_data(args):
             lbe = LabelEncoder()
             df[feat] = lbe.fit_transform(df[feat])
             
-        #mms = MinMaxScaler(feature_range=(0,1))
-        #df[col_dense] = mms.fit_transform(df[col_dense])
         scaler = StandardScaler()
         df[col_dense] = scaler.fit_transform(df[col_dense])
-        
-        
         
         y = df[col_target]
         x = df[col_dense + col_sparse]
         #x = df[col_dense]
         #args.feature_dim = 13
+        
+        feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        
+        
+    elif args.dataset == 'kdd99':
+        import pandas as pd
+        from sklearn.model_selection import train_test_split
+        from sklearn.datasets import fetch_kddcup99
+        from sklearn.preprocessing import LabelEncoder, StandardScaler
+        
+        class_num = 23
+        args.feature_dim = 41
+        dataset = fetch_kddcup99()
+
+        col_sparse = ['protocol_type','service','flag']
+        col_dense = ['duration', 'src_bytes', 'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations', 'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login', 'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate',    'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',  'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate']
+        label = ['label']     
+        df = pd.DataFrame(
+            dataset.data,
+            columns=dataset.feature_names
+        )
+        df.loc[:,label] = dataset.target  
+    
+          
+        df[col_sparse] = df[col_sparse].fillna('-1', )
+        df[col_dense] = df[col_dense].fillna(0,)
+        
+        for feat in col_sparse:
+            lbe = LabelEncoder()
+            df.loc[:,feat] = lbe.fit_transform(df[feat])
+            #print(df[feat].value_counts())
+        lbe = LabelEncoder()
+        df.loc[:,label] = lbe.fit_transform(df[label])
+        
+        scaler = StandardScaler()
+        df[col_dense] = scaler.fit_transform(df[col_dense])
+        
+        y = df[label]
+        #x = df[col_dense + col_sparse].astype('float64')
+        x = df[col_dense[:]].astype('float64')
+        args.feature_dim = x.shape[1]
         
         feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
         
@@ -295,7 +365,7 @@ def train(model, data_loader, epoch, task="text"):
             tot_loss.append(losses)
                 
             pred = model.inference(x)
-            #print(pred.argmax(-1) ,y)
+            #print(pred ,y)
             #print((pred.argmax(-1) == y).sum())
             #print(x.size(0))
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
@@ -409,21 +479,22 @@ def main():
         word_vec = get_word_vector(vocab, args.word_vec)
         
         if args.model == 'lstmal':
-            model = LSTMModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = LSTMModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'linearal':
-            model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'transformeral':
-            model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
     
     elif args.task == "classification":
         train_loader, test_loader, class_num  = get_data(args)
         if args.model == 'linearal':
-            model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lr=args.lr)
-        
+            model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
+        elif args.model == 'linearalside' :
+            model = LinearALsideCLS(num_layer=args.num_layer, side_dim=[5,5,5,5,5,5,5,3], class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
     elif args.task == "regression":
         train_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
-            model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, target_dim=1, l1_dim=args.l1_dim, lr=args.lr)
+            model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, target_dim=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         
     model = model.cuda()
 
@@ -476,6 +547,20 @@ def main():
         model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
         predicting_for_sst(args, model, vocab)
 
-    
+    print('Start Testing')
+    if args.task == "text" or args.task == "classification":
+        model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
+        model.eval()
+        for layer in range(model.num_layer):
+            y_out, y_tar = torch.Tensor([]),torch.Tensor([])
+            for x, y in test_loader:
+                x, y = x.cuda(), y.cuda()
+                pred = model.inference(x, layer+1)
+                y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu()), 0)
+                y_tar = torch.cat((y_tar, y.view(-1).cpu()), 0)
+                
+            plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(23)], 'result/'+ f"{path_name}_test_l{layer}")
+        
+        
     
 main()
