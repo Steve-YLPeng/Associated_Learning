@@ -372,12 +372,26 @@ class LSTMModel(nn.Module):
        
 ### YLP: multi-layer version of al
 
-class TransformerModelML(nn.Module):    
-    def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
+class alModel(nn.Module):
+    def __init__(self, num_layer, l1_dim, class_num, lab_dim, emb_dim=None):
         super().__init__()
         
         self.num_layer = num_layer
-        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[],
+                        "train_AUC":[],"valid_AUC":[],
+                        "train_r2":[],"valid_r2":[],
+                        "train_out":[],"valid_out":[],
+                        } 
+        self.emb_dim = emb_dim
+        self.l1_dim = l1_dim
+        self.lab_dim = lab_dim
+        self.losses = [0.0] * (num_layer*2)
+        self.class_num = class_num
+
+class TransformerModelML(alModel):    
+    def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
+        super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
+               
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
@@ -388,10 +402,6 @@ class TransformerModelML(nn.Module):
                 layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
         
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.class_num = class_num
         self.layers = layers     
         
     def forward(self, x, y):
@@ -446,12 +456,10 @@ class TransformerModelML(nn.Module):
         return y_out
     
     
-class LSTMModelML(nn.Module):    
+class LSTMModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
-        super().__init__()
-        
-        self.num_layer = num_layer
-        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
+             
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
@@ -462,10 +470,6 @@ class LSTMModelML(nn.Module):
                 layer = LSTMLayer(l1_dim*2, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
         
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.class_num = class_num
         self.layers = layers     
         
     def forward(self, x, y):
@@ -521,12 +525,10 @@ class LSTMModelML(nn.Module):
         return y_out
 
 
-class LinearModelML(nn.Module):    
+class LinearModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
-        super().__init__()
-        
-        self.num_layer = num_layer
-        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
+             
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
@@ -537,10 +539,6 @@ class LinearModelML(nn.Module):
                 layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
         
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.class_num = class_num
         self.layers = layers     
         
     def forward(self, x, y):
@@ -591,28 +589,22 @@ class LinearModelML(nn.Module):
 #   LinearALReg, 
 ###########################################################
 
-class LinearALRegress(nn.Module): 
+class LinearALRegress(alModel): 
     
-    def __init__(self, num_layer, feature_dim, target_dim, l1_dim, lr, lab_dim=128):
-        super().__init__()
-        
-        self.num_layer = num_layer
-        self.history = {"train_r2":[],"train_out":[],"valid_r2":[],"valid_out":[],"train_loss":[]}        
+    def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
+        super().__init__(num_layer, l1_dim, class_num, lab_dim)
+              
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
                 act = [nn.Tanh(),None]
                 #act = [None,None]
-                layer = LinearLayer(inp_dim=feature_dim, out_dim=target_dim, 
+                layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_act=act)
             else:
                 layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
         
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.target_dim = target_dim
         self.layers = layers     
 
 
@@ -656,12 +648,10 @@ class LinearALRegress(nn.Module):
             
         return y_out
     
-class LinearALCLS(nn.Module):    
+class LinearALCLS(alModel):    
     def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
-        super().__init__()
-        
-        self.num_layer = num_layer
-        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+        super().__init__(num_layer, l1_dim, class_num, lab_dim)
+              
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
@@ -675,10 +665,6 @@ class LinearALCLS(nn.Module):
                 layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr, ae_cri='mse')
             layers.append(layer)
         
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.class_num = class_num
         self.layers = layers     
         
     def forward(self, x, y):
@@ -718,14 +704,13 @@ class LinearALCLS(nn.Module):
             
         return y_out
     
-class LinearALsideCLS(nn.Module):    
+class LinearALsideCLS(alModel):    
     def __init__(self, num_layer, side_dim:List[int], class_num, l1_dim, lr, lab_dim=128):
-        super().__init__()
+        super().__init__(num_layer, l1_dim, class_num, lab_dim)
         
         assert num_layer == len(side_dim)
         self.side_dim = side_dim
-        self.num_layer = num_layer
-        self.history = {"train_acc":[],"valid_acc":[],"train_loss":[]}        
+     
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
@@ -741,10 +726,6 @@ class LinearALsideCLS(nn.Module):
                 layer = LinearLayer(inp_dim=concat_dim, hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='mse')
             layers.append(layer)
             
-        self.l1_dim = l1_dim
-        self.lab_dim = lab_dim
-        self.losses = [0.0] * (num_layer*2)
-        self.class_num = class_num
         self.layers = layers  
     
     def sidedata(self, x):

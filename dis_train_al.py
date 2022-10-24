@@ -3,7 +3,7 @@ from nltk.corpus import stopwords
 import torch
 from torch.utils.data import DataLoader
 from torch.nn.functional import mse_loss
-from torchmetrics.functional import r2_score
+from torchmetrics.functional import r2_score, auroc
 from utils import *
 # from model import Model
 from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress, LinearALCLS, LinearALsideCLS
@@ -26,7 +26,7 @@ def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):
     df_cm = pd.DataFrame(cm, range(len(cm)), range(len(cm)))
     # plt.figure(figsize=(10,7))
     #sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True,vmin=0, vmax=1000) # font size
+    sn.heatmap(df_cm, annot=True,vmin=0, vmax=500, fmt='d', annot_kws={"size":6})
     plt.savefig(save_filename+"_cm.png")
     plt.show()
     return
@@ -72,18 +72,29 @@ def plotResult(model, save_filename, task):
         plt.legend()
         plt.savefig(save_filename+"_acc.png")
         plt.show()
+        
+        # plot epoch AUC
+        epoch_valid_AUC = numpy.array(history["valid_AUC"]).T
+        for idx,AUC in enumerate(epoch_valid_AUC):
+            plt.plot(AUC, label='valid AUC L'+str(idx+1))
+        plt.plot(history["train_AUC"], "k", label='train_AUC' )
+        #plt.ylim(0.9, 1.0)
+        plt.legend()
+        plt.savefig(save_filename+"_AUC.png")
+        plt.show()
+        
     if task == "regression":
         epoch_valid_out = numpy.array(history["valid_out"]).T
-        for idx,acc in enumerate(epoch_valid_out):
-            plt.plot(acc, label='valid out_loss L'+str(idx+1))
+        for idx,out_loss in enumerate(epoch_valid_out):
+            plt.plot(out_loss, label='valid out_loss L'+str(idx+1))
         plt.plot(history["train_out"], "k", label='train_out' )
         plt.legend()
         plt.savefig(save_filename+"_out.png")
         plt.show()
         
         epoch_valid_r2 = numpy.array(history["valid_r2"]).T
-        for idx,acc in enumerate(epoch_valid_r2):
-            plt.plot(acc, label='valid_r2 L'+str(idx+1))
+        for idx,r2 in enumerate(epoch_valid_r2):
+            plt.plot(r2, label='valid_r2 L'+str(idx+1))
         
         plt.plot(history["train_r2"], "k", label='train_r2' )
         plt.legend()
@@ -223,7 +234,8 @@ def get_data(args):
 
         col_sparse = ['protocol_type','service','flag']
         col_dense = ['duration', 'src_bytes', 'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations', 'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login', 'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate',    'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',  'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate']
-        label = ['label']     
+        label = ['label'] 
+        
         df = pd.DataFrame(
             dataset.data,
             columns=dataset.feature_names
@@ -238,18 +250,41 @@ def get_data(args):
             lbe = LabelEncoder()
             df.loc[:,feat] = lbe.fit_transform(df[feat])
             #print(df[feat].value_counts())
-        lbe = LabelEncoder()
-        df.loc[:,label] = lbe.fit_transform(df[label])
+        #lbe = LabelEncoder()
+        #df.loc[:,label] = lbe.fit_transform(df[label])
+        
+        # label encoded by value_count
+        label_used = df['label'].value_counts(sort=True).index
+        label_map = {v:i for i,v in enumerate(label_used)}
+        df.loc[:,label] = df['label'].map(label_map)
         
         scaler = StandardScaler()
         df[col_dense] = scaler.fit_transform(df[col_dense])
         
-        y = df[label]
+        #y = df[label]
         #x = df[col_dense + col_sparse].astype('float64')
-        x = df[col_dense[:]].astype('float64')
-        args.feature_dim = x.shape[1]
+        #x = df[col_dense[:]].astype('float64')
+        #args.feature_dim = x.shape[1]
+        #feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        #print(feature_train.shape, feature_test.shape, train_target.shape, test_target.shape)
         
-        feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
+        # only keep top11 target label
+        df = df[df['label'] < 11]
+        class_num = 11
+        
+        data_train, data_test = pd.DataFrame(), pd.DataFrame()
+        for _,group in df.groupby(label):
+            train, test = train_test_split(group, test_size=0.2)
+            data_train = pd.concat((data_train,train))
+            data_test = pd.concat((data_test,test))
+        feature_train = data_train[col_dense].astype('float64')
+        feature_test = data_test[col_dense].astype('float64')
+        train_target = data_train[label]
+        test_target = data_test[label]
+        args.feature_dim = feature_train.shape[1]
+        
+        #print(feature_train.shape, feature_test.shape, train_target.shape, test_target.shape)
+        
         
     elif args.dataset == 'ailerons':
         from mit_d3m import load_dataset
@@ -357,6 +392,7 @@ def train(model, data_loader, epoch, task="text"):
     if task == "text" or task == "classification":
         model.train()
         cor, num, tot_loss = 0, 0, []
+        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         data_loader = tqdm(data_loader)
         for step, (x, y) in enumerate(data_loader):
             
@@ -365,20 +401,23 @@ def train(model, data_loader, epoch, task="text"):
             tot_loss.append(losses)
                 
             pred = model.inference(x)
-            #print(pred ,y)
-            #print((pred.argmax(-1) == y).sum())
-            #print(x.size(0))
+            
+            y_out = torch.cat((y_out, pred.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu()), 0)
+            
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
             
             data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-        
+            
+        train_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num).item()
         train_acc = cor/num
         train_loss = numpy.sum(tot_loss, axis=0)
+        model.history["train_AUC"].append(train_AUC)
         model.history["train_acc"].append(train_acc)
         model.history["train_loss"].append(train_loss)
         print(train_loss)
-        print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
+        print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num}), AUC {train_AUC}')
         
     elif task == "regression":
         model.train()
@@ -418,15 +457,20 @@ def test(model, data_loader, shortcut=None, task="text"):
     if task == "text" or task == "classification":
         model.eval()
         cor, num = 0, 0
+        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         #data_loader = tqdm(data_loader)
         for x, y in data_loader:
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
+            y_out = torch.cat((y_out, pred.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu()), 0)
             #cor += (pred.argmax(-1) == y).sum().item()
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
 
-        return cor/num
+        valid_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num).item()
+        valid_acc = cor/num
+        return valid_AUC, valid_acc
     
     elif task == "regression":
         model.eval()
@@ -494,29 +538,32 @@ def main():
     elif args.task == "regression":
         train_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
-            model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, target_dim=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
+            model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         
     model = model.cuda()
 
     print('Start Training')
     
     if args.task == "text" or args.task == "classification":
-        best_acc = 0
+        best_AUC = 0
         for epoch in range(args.epoch):
             train(model, train_loader, epoch, task=args.task)
-            valid_acc = []
+            valid_acc,valid_AUC = [],[]
             for layer in range(model.num_layer):
-                result = test(model, test_loader, shortcut=layer+1, task=args.task)
-                valid_acc.append(result)
-                print(f'Test Epoch{epoch} layer{layer} Acc {result}')
-                if result >= best_acc:
-                    best_acc = result
+                AUC, acc = test(model, test_loader, shortcut=layer+1, task=args.task)
+                valid_AUC.append(AUC)
+                valid_acc.append(acc)
+                print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
+                if AUC >= best_AUC:
+                    best_AUC = AUC
                     torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
             model.history["valid_acc"].append(valid_acc)
+            model.history["valid_AUC"].append(valid_AUC)
 
-        print('Best acc', best_acc)
+        print('Best AUC', best_AUC)
         print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
         print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
+        print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
         print('train_acc', numpy.array(model.history["train_acc"]).shape)
         
     elif args.task == "regression":
