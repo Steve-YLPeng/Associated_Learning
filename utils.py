@@ -136,13 +136,13 @@ def get_data(args):
         
         data_train, data_test = pd.DataFrame(), pd.DataFrame()
         for _,group in df.groupby(label):
-            train, test = train_test_split(group, test_size=0.2)
+            train, test = train_test_split(group, test_size=0.2, random_state=3535)
             data_train = pd.concat((data_train,train))
             data_test = pd.concat((data_test,test))
-        #feature_train = data_train[col_dense].astype('float64')
-        #feature_test = data_test[col_dense].astype('float64')
-        feature_train = data_train[col_dense+col_sparse_hot].astype('float64')
-        feature_test = data_test[col_dense+col_sparse_hot].astype('float64')   
+        feature_train = data_train[col_dense[:]].astype('float64')
+        feature_test = data_test[col_dense[:]].astype('float64')
+        #feature_train = data_train[col_dense+col_sparse_hot].astype('float64')
+        #feature_test = data_test[col_dense+col_sparse_hot].astype('float64')   
         train_target = data_train[label]
         test_target = data_test[label]
         args.feature_dim = feature_train.shape[1]

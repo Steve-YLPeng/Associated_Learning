@@ -6,7 +6,7 @@ from torch.nn.functional import mse_loss
 from torchmetrics.functional import r2_score, auroc
 from utils import *
 # from model import Model
-from distributed_model import LSTMModelML, LinearModelML, TransformerModelML, LinearALRegress, LinearALCLS, LinearALsideCLS
+from distributed_model import *
 from tqdm import tqdm
 import os
 import numpy
@@ -81,7 +81,7 @@ def train(model, data_loader, epoch, task="text"):
             
             data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
             
-        train_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num).item()
+        train_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
         train_loss = numpy.sum(tot_loss, axis=0)
         model.history["train_AUC"].append(train_AUC)
@@ -139,7 +139,7 @@ def test(model, data_loader, shortcut=None, task="text"):
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
 
-        valid_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num).item()
+        valid_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
         valid_acc = cor/num
         return valid_AUC, valid_acc
     
@@ -185,7 +185,6 @@ def predicting_for_sst(args, model, vocab):
 
 def main():
 
-    
     args = get_args()
     path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{str(args.num_layer)}"
     
@@ -205,12 +204,13 @@ def main():
         if args.model == 'linearal':
             model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         elif args.model == 'linearalside' :
-            model = LinearALsideCLS(num_layer=args.num_layer, side_dim=[5,5,5,5,5,5,5,3,3,66,11], class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
+            model = LinearALsideCLS(num_layer=args.num_layer, side_dim=[8,8,8,8,6], class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
     elif args.task == "regression":
         train_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
-        
+
+    model.apply(initialize_weights)
     model = model.cuda()
 
     print('Start Training')
@@ -220,14 +220,15 @@ def main():
         for epoch in range(args.epoch):
             train(model, train_loader, epoch, task=args.task)
             valid_acc,valid_AUC = [],[]
-            for layer in range(model.num_layer):
-                AUC, acc = test(model, test_loader, shortcut=layer+1, task=args.task)
-                valid_AUC.append(AUC)
-                valid_acc.append(acc)
-                print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
-                if AUC >= best_AUC:
-                    best_AUC = AUC
-                    torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
+            with torch.no_grad():
+                for layer in range(model.num_layer):
+                    AUC, acc = test(model, test_loader, shortcut=layer+1, task=args.task)
+                    valid_AUC.append(AUC)
+                    valid_acc.append(acc)
+                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
+                    if AUC >= best_AUC:
+                        best_AUC = AUC
+                        torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
 
@@ -242,17 +243,17 @@ def main():
         for epoch in range(args.epoch):
             train(model, train_loader, epoch, task="regression")
             valid_out, valid_r2 = [],[]
-            
-            for layer in range(model.num_layer):
-                loss, r2 = test(model, test_loader, shortcut=layer+1, task="regression")
-                valid_out.append(loss)
-                valid_r2.append(r2)
-                print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
-                
-                if r2 > best_r2:
-                    best_r2 = r2
-                    best_layer = layer
-                    torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
+            with torch.no_grad():
+                for layer in range(model.num_layer):
+                    loss, r2 = test(model, test_loader, shortcut=layer+1, task="regression")
+                    valid_out.append(loss)
+                    valid_r2.append(r2)
+                    print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
+                    
+                    if r2 > best_r2:
+                        best_r2 = r2
+                        best_layer = layer
+                        torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
                     
             model.history["valid_out"].append(valid_out)
             model.history["valid_r2"].append(valid_r2)
@@ -269,15 +270,16 @@ def main():
     if args.task == "text" or args.task == "classification":
         model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
         model.eval()
-        for layer in range(model.num_layer):
-            y_out, y_tar = torch.Tensor([]),torch.Tensor([])
-            for x, y in test_loader:
-                x, y = x.cuda(), y.cuda()
-                pred = model.inference(x, layer+1)
-                y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu()), 0)
-                y_tar = torch.cat((y_tar, y.view(-1).cpu()), 0)
-                
-            plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(23)], 'result/'+ f"{path_name}_test_l{layer}")
+        with torch.no_grad():
+            for layer in range(model.num_layer):
+                y_out, y_tar = torch.Tensor([]),torch.Tensor([])
+                for x, y in test_loader:
+                    x, y = x.cuda(), y.cuda()
+                    pred = model.inference(x, layer+1)
+                    y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu()), 0)
+                    y_tar = torch.cat((y_tar, y.view(-1).cpu()), 0)
+                    
+                plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(23)], 'result/'+ f"{path_name}_test_l{layer}")
         
         
     

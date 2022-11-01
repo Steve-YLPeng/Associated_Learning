@@ -4,8 +4,15 @@ from transformer.encoder import TransformerEncoder
 from torch.nn import ModuleList
 from typing import List
 
-### Layer component definition
+def initialize_weights(m):
+    if isinstance(m, nn.Linear):
+        nn.init.xavier_uniform_(m.weight.data)
+    elif isinstance(m, nn.LSTM):
+        nn.init.xavier_uniform_(m.weight.data)
+    elif isinstance(m, TransformerEncoder):
+        nn.init.xavier_uniform_(m.weight.data)
 
+### Layer component definition
 class AE(nn.Module):
     
     ############################################
@@ -66,12 +73,11 @@ class AE(nn.Module):
         enc_x = self.g(x)
         rec_x = self.h(enc_x)
         if self.mode == 'ce':
-            #print("ae",rec_x)
-            #print("lab",x)
-            return enc_x, self.cri(rec_x, x.argmax(1))
+            loss = self.cri(rec_x, x.argmax(1))
         elif self.mode == 'mse':
-            return enc_x, self.cri(rec_x, x)
-
+            loss = self.cri(rec_x, x)
+            
+        return enc_x, loss
 class ENC(nn.Module):
     
     ############################################
@@ -172,16 +178,18 @@ class EMBLayer(nn.Module):
 
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
-        ae_loss.backward()
-        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-        self.ae_opt.step()
+        if self.training:
+            ae_loss.backward()
+            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, mask = self.enc(x, tgt, mask, h)
-        enc_loss.backward()
-        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-        self.enc_opt.step()
+        if self.training:
+            enc_loss.backward()
+            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
 
@@ -202,16 +210,18 @@ class TransLayer(nn.Module):
 
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
-        ae_loss.backward()
-        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-        self.ae_opt.step()
+        if self.training:
+            ae_loss.backward()
+            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
-        enc_loss.backward()
-        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-        self.enc_opt.step()
+        if self.training:
+            enc_loss.backward()
+            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, mask        
 
@@ -232,16 +242,18 @@ class LSTMLayer(nn.Module):
 
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
-        ae_loss.backward()
-        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-        self.ae_opt.step()
+        if self.training:
+            ae_loss.backward()
+            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
-        enc_loss.backward()
-        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-        self.enc_opt.step()
+        if self.training:
+            enc_loss.backward()
+            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
         (h, c) = hidden
         h = h.reshape(2, x.size(0), -1)
         hidden = (h.detach(), c.detach())
@@ -265,16 +277,18 @@ class LinearLayer(nn.Module):
 
         self.ae_opt.zero_grad()
         enc_y , ae_loss = self.ae(y)
-        ae_loss.backward()
-        #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-        self.ae_opt.step()
+        if self.training:
+            ae_loss.backward()
+            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
     
         self.enc_opt.zero_grad()
         tgt = enc_y.clone().detach()
         enc_x, enc_loss, _, _ = self.enc(x, tgt)
-        enc_loss.backward()
-        #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-        self.enc_opt.step()
+        if self.training:
+            enc_loss.backward()
+            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
         #(h, c) = hidden
         #h = h.reshape(2, x.size(0), -1)
         #hidden = (h.detach(), c.detach())
@@ -387,6 +401,7 @@ class alModel(nn.Module):
         self.lab_dim = lab_dim
         self.losses = [0.0] * (num_layer*2)
         self.class_num = class_num
+        self.layers = ModuleList([])
 
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
