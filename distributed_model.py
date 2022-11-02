@@ -3,6 +3,8 @@ import torch.nn as nn
 from transformer.encoder import TransformerEncoder
 from torch.nn import ModuleList
 from typing import List
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+
 
 def initialize_weights(m):
     if isinstance(m, nn.Linear):
@@ -173,7 +175,9 @@ class EMBLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
+        
     def forward(self, x, y, mask=None, h=None):
 
         self.ae_opt.zero_grad()
@@ -205,6 +209,8 @@ class TransLayer(nn.Module):
 
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=0.0005)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
     
     def forward(self, x, y, mask):
 
@@ -237,6 +243,8 @@ class LSTMLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
 
     def forward(self, x, y, mask=None, h=None):
 
@@ -272,6 +280,8 @@ class LinearLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
 
     def forward(self, x, y):
 
@@ -402,6 +412,12 @@ class alModel(nn.Module):
         self.losses = [0.0] * (num_layer*2)
         self.class_num = class_num
         self.layers = ModuleList([])
+        
+    def schedulerStep(self, layer, score):
+        #print("lr step")
+        self.layers[layer].ae_sche.step(score)
+        self.layers[layer].enc_sche.step(score)
+        
 
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):

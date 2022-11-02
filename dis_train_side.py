@@ -49,7 +49,7 @@ def get_args():
     parser.add_argument('--model', type=str, default='lstmal')
     parser.add_argument('--task', type=str, default="text")
     parser.add_argument('--feature-dim', type=int, default=0)
-    
+    parser.add_argument('--lr-schedule', type=str, default=None)
     args = parser.parse_args()
 
     try:
@@ -237,6 +237,8 @@ def main():
                     AUC, acc = test(model, test_loader, shortcut=layer+1, task=args.task)
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
+                    if args.lr_schedule != None:
+                        model.schedulerStep(layer,AUC)
                     print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
                     if layer in layer_mask and AUC >= best_AUC:
                         best_AUC = AUC
@@ -245,6 +247,8 @@ def main():
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
 
+            
+            
         print('Best AUC', best_AUC)
         print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
         print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
@@ -263,7 +267,8 @@ def main():
                     valid_out.append(loss)
                     valid_r2.append(r2)
                     print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
-                    
+                    if args.lr_schedule != None:
+                        model.schedulerStep(layer,r2)
                     
                     if layer in layer_mask and r2 > best_r2:
                         best_r2 = r2
@@ -273,6 +278,7 @@ def main():
             model.history["valid_out"].append(valid_out)
             model.history["valid_r2"].append(valid_r2)
             
+
         print(f'Best r2 {best_r2} at L{best_layer}' )
             
     plotResult(model,'result/'+ path_name, args.task)
