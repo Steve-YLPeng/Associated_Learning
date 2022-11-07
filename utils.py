@@ -146,6 +146,8 @@ def get_data(args):
         train_target = data_train[label]
         test_target = data_test[label]
         args.feature_dim = feature_train.shape[1]
+        del df
+        
         
         
     elif args.dataset == 'ailerons':

@@ -10,7 +10,7 @@ from distributed_model import *
 from tqdm import tqdm
 import os
 import numpy
-
+import gc
 
 stop_words = set(stopwords.words('english'))
         
@@ -50,6 +50,7 @@ def get_args():
     parser.add_argument('--task', type=str, default="text")
     parser.add_argument('--feature-dim', type=int, default=0)
     parser.add_argument('--lr-schedule', type=str, default=None)
+    parser.add_argument('--train-mask', type=int, default=None)
     args = parser.parse_args()
 
     try:
@@ -74,7 +75,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         data_loader = tqdm(data_loader)
         for step, (x, y) in enumerate(data_loader):
-            
+            #print(step)
             x, y = x.cuda(), y.cuda()
             losses = model(x, y)
             tot_loss.append(losses)
@@ -86,7 +87,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
             
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
-            
+            #print(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
             data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
             
         train_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
@@ -97,6 +98,9 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         model.history["train_loss"].append(train_loss)
         print(train_loss)
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num}), AUC {train_AUC}')
+        del y_out
+        del y_tar
+        print("train_gc",gc.collect())
         
     elif task == "regression":
         out_loss, num, tot_loss = 0, 0, []
@@ -105,6 +109,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         for step, (x, y) in enumerate(data_loader):
             #print(x)
             #print(y)
+            
             x, y = x.cuda(), y.cuda()
             losses = model(x, y)
             tot_loss.append(losses)
@@ -128,7 +133,9 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         model.history["train_r2"].append(train_r2)
         #print(train_loss)
         #loss = torch.sqrt(mse_loss(y_out, y_tar))
-        
+        del y_out
+        del y_tar
+        print("train_gc",gc.collect())
         print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
 
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
@@ -148,6 +155,9 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
 
         valid_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
         valid_acc = cor/num
+        del y_out
+        del y_tar
+        print("test_gc",gc.collect())
         return valid_AUC, valid_acc
     
     elif task == "regression":
@@ -166,6 +176,9 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
         valid_out = mse_loss(y_out, y_tar).item()
         valid_r2 = r2_score(y_out, y_tar).item()
         #return torch.sqrt(out_loss/num).item()
+        del y_out
+        del y_tar
+        print("test_gc",gc.collect())
         return valid_out, valid_r2
 
 def predicting_for_sst(args, model, vocab):
@@ -191,9 +204,14 @@ def predicting_for_sst(args, model, vocab):
     output.to_csv('SST-2.tsv', sep='\t', index=False)
 
 def main():
-
+    gc.enable()
     args = get_args()
-    path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{str(args.num_layer)}"
+    if args.train_mask is not None:
+        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask}"
+    else:
+        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}"
+    if args.train_mask is not None:
+        load_path = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask-1}"
     
     if args.task == "text":
         train_loader, test_loader, class_num, vocab = get_data(args)
@@ -218,18 +236,29 @@ def main():
             model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
 
     if args.load_dir != None:
-        print("Load ckpt from", args.load_dir+f'/{path_name}.pt')
-        model.load_state_dict(torch.load(args.load_dir+f'/{path_name}.pt'))
+        print("Load ckpt from", args.load_dir+f'/{load_path}.pt')
+        
+        model.load_state_dict(torch.load(args.load_dir+f'/{load_path}.pt'))
     else:
         model.apply(initialize_weights)
     model = model.cuda()
 
-    print('Start Training')
+    # Set training mask
+    if args.train_mask is not None:
+        #layer_mask=[*range(args.train_mask)]
+        layer_mask = [args.train_mask-1]
+    else:
+        #layer_mask = [*range(args.num_layer)]
+        layer_mask = None
+    print("layer_mask",layer_mask)
     
+    print('Start Training')
+
     if args.task == "text" or args.task == "classification":
-        layer_mask = [0,1,2,3,4]
+        
         best_AUC = 0
         for epoch in range(args.epoch):
+            print("gc",gc.collect())
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask)
             valid_acc,valid_AUC = [],[]
             with torch.no_grad():
@@ -246,7 +275,6 @@ def main():
                         torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
-
             
             
         print('Best AUC', best_AUC)
@@ -258,7 +286,8 @@ def main():
     elif args.task == "regression":
         best_r2, best_layer = 0,-1
         for epoch in range(args.epoch):
-            train(model, train_loader, epoch, task="regression")
+            print("gc",gc.collect())
+            train(model, train_loader, epoch, task="regression", layer_mask=layer_mask)
             valid_out, valid_r2 = [],[]
             
             with torch.no_grad():
