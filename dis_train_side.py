@@ -62,35 +62,34 @@ def get_args():
 
 
 def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=None):
-    if layer_mask!=None:
-        model.eval()
-        for layer in layer_mask:
-            model.layers[layer].train()
-    else:
-        model.train()
+    
         
     if task == "text" or task == "classification":
         
         cor, num, tot_loss = 0, 0, []
         y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         data_loader = tqdm(data_loader)
+        
+        model.train(True, layer_mask)
         for step, (x, y) in enumerate(data_loader):
+            
             #print(step)
             x, y = x.cuda(), y.cuda()
             losses = model(x, y)
             tot_loss.append(losses)
-                
+            
+            #model.eval()
             pred = model.inference(x)
             
             y_out = torch.cat((y_out, pred.cpu()), 0)
-            y_tar = torch.cat((y_tar, y.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
             
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
             #print(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
             data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-            
-        train_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
+            #gc.collect()
+        train_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
         train_loss = numpy.sum(tot_loss, axis=0)
         model.history["train_AUC"].append(train_AUC)
@@ -100,7 +99,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num}), AUC {train_AUC}')
         del y_out
         del y_tar
-        print("train_gc",gc.collect())
+        #print("train_gc",gc.collect())
         
     elif task == "regression":
         out_loss, num, tot_loss = 0, 0, []
@@ -122,7 +121,8 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
             num += x.size(0)
             
             data_loader.set_description(f'Train {epoch} | out_loss {torch.sqrt(out_loss/num)}')
-        
+            #gc.collect()
+            
         #train_acc = cor/num
         #train_out = torch.sqrt(out_loss/num).item()
         train_out = mse_loss(y_out, y_tar).item()
@@ -133,9 +133,9 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         model.history["train_r2"].append(train_r2)
         #print(train_loss)
         #loss = torch.sqrt(mse_loss(y_out, y_tar))
-        del y_out
-        del y_tar
-        print("train_gc",gc.collect())
+        #del y_out
+        #del y_tar
+        #print("train_gc",gc.collect())
         print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
 
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
@@ -148,16 +148,16 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
             y_out = torch.cat((y_out, pred.cpu()), 0)
-            y_tar = torch.cat((y_tar, y.cpu()), 0)
+            y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
             #cor += (pred.argmax(-1) == y).sum().item()
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
-
-        valid_AUC = auroc(y_out,y_tar.view(-1).int(),num_classes=model.class_num,average='macro').item()
+            #gc.collect()
+        valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         valid_acc = cor/num
-        del y_out
-        del y_tar
-        print("test_gc",gc.collect())
+        #del y_out
+        #del y_tar
+        #print("test_gc",gc.collect())
         return valid_AUC, valid_acc
     
     elif task == "regression":
@@ -172,13 +172,13 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
             y_tar = torch.cat((y_tar, y.cpu()), 0)
             out_loss += mse_loss(pred, y, reduction='sum')
             num += x.size(0)
+            #gc.collect()
             
         valid_out = mse_loss(y_out, y_tar).item()
         valid_r2 = r2_score(y_out, y_tar).item()
         #return torch.sqrt(out_loss/num).item()
-        del y_out
-        del y_tar
-        print("test_gc",gc.collect())
+        #del y_out
+        #del y_tar
         return valid_out, valid_r2
 
 def predicting_for_sst(args, model, vocab):
@@ -243,13 +243,10 @@ def main():
         model.apply(initialize_weights)
     model = model.cuda()
 
-    # Set training mask
-    if args.train_mask is not None:
-        #layer_mask=[*range(args.train_mask)]
-        layer_mask = [args.train_mask-1]
-    else:
-        #layer_mask = [*range(args.num_layer)]
-        layer_mask = None
+    if args.train_mask != None:
+        # layer_mask = {args.train_mask-1}
+        layer_mask = {*range(args.train_mask)}
+     
     print("layer_mask",layer_mask)
     
     print('Start Training')
@@ -327,9 +324,9 @@ def main():
                 for x, y in test_loader:
                     x, y = x.cuda(), y.cuda()
                     pred = model.inference(x, layer+1)
-                    y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu()), 0)
-                    y_tar = torch.cat((y_tar, y.view(-1).cpu()), 0)
-                    
+                    y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu().int()), 0).int()
+                    y_tar = torch.cat((y_tar, y.view(-1).cpu().int()), 0).int()
+                    #gc.collect()
                 plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(23)], 'result/'+ f"{path_name}_test_l{layer}")
         
         

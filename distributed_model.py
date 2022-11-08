@@ -418,6 +418,19 @@ class alModel(nn.Module):
         self.layers[layer].ae_sche.step(score)
         self.layers[layer].enc_sche.step(score)
         
+    def train(self, is_train=True, layer_mask = None): 
+        if layer_mask!=None:
+            for layer in range(self.num_layer):
+                if layer in layer_mask:
+                    self.layers[layer].train()
+                    for param in self.layers[layer].parameters():
+                        param.requires_grad = True
+                else:
+                    self.layers[layer].eval()
+                    for param in self.layers[layer].parameters():
+                        param.requires_grad = False
+        else:
+            super().train(is_train)  
 
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
@@ -689,7 +702,6 @@ class LinearALCLS(alModel):
                 #act = [nn.Tanh(), nn.Tanh()]
                 #act = [nn.ELU(), nn.ELU()]
                 act = [nn.Tanh(),nn.Sigmoid()]
-                #act = None 
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
             else:
@@ -701,9 +713,8 @@ class LinearALCLS(alModel):
     def forward(self, x, y):
         
         layer_loss = []
-        #print(y.shape)
         y = torch.nn.functional.one_hot(y.view(-1).long(), self.class_num).float().to(y.device)
-        #print(y)
+
         # forward function also update
         for idx,layer in enumerate(self.layers):
             if idx == 0:
@@ -715,6 +726,7 @@ class LinearALCLS(alModel):
                 
         return layer_loss
     
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
         if len_path == None:
@@ -781,6 +793,7 @@ class LinearALsideCLS(alModel):
                 
         return layer_loss        
     
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
         if len_path == None:
