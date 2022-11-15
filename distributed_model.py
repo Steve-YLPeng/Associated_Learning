@@ -6,13 +6,26 @@ from typing import List
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 
 
-def initialize_weights(m):
-    if isinstance(m, nn.Linear):
-        nn.init.xavier_uniform_(m.weight.data)
-    elif isinstance(m, nn.LSTM):
-        nn.init.xavier_uniform_(m.weight.data)
-    elif isinstance(m, TransformerEncoder):
-        nn.init.xavier_uniform_(m.weight.data)
+def initialize_weights(model):
+    if isinstance(model, nn.Linear):
+        nn.init.xavier_uniform_(model.weight.data)
+    elif isinstance(model, nn.LSTM):
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0.0)
+            elif 'weight_ih' in name:
+                nn.init.kaiming_normal_(param)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param)
+    elif isinstance(model, TransformerEncoder):
+        return
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0.0)
+            elif 'weight_ih' in name:
+                nn.init.kaiming_normal_(param)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param)
 
 ### Layer component definition
 class AE(nn.Module):
@@ -469,6 +482,7 @@ class TransformerModelML(alModel):
         pad_mask = ~(x == 0)
         return pad_mask.cuda()
     
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         
         mask = self.get_mask(x)
@@ -534,6 +548,7 @@ class LSTMModelML(alModel):
                 
         return layer_loss
     
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         
         # full path inference by default
@@ -603,6 +618,7 @@ class LinearModelML(alModel):
                 
         return layer_loss
     
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
         if len_path == None:
@@ -671,7 +687,7 @@ class LinearALRegress(alModel):
                 
         return layer_loss
     
-    
+    @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
         if len_path == None:

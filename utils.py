@@ -260,7 +260,9 @@ def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):
     df_cm = pd.DataFrame(cm, range(len(cm)), range(len(cm)))
     # plt.figure(figsize=(10,7))
     #sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True,vmin=0, vmax=500, fmt='d', annot_kws={"size":6})
+    sn.heatmap(df_cm, annot=True, fmt='d', annot_kws={"size":6})
+    #sn.heatmap(df_cm, annot=True,vmin=0, vmax=500, fmt='d', annot_kws={"size":6})
+    
     #sn.heatmap(df_cm, annot=True, fmt='d', annot_kws={"size":6})
     plt.savefig(save_filename+"_cm.png")
     plt.show()

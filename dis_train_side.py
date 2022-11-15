@@ -28,7 +28,7 @@ def get_args():
                         help='lstm1 hidden dimension', default=300)
 
     parser.add_argument('--vocab-size', type=int, help='vocab-size', default=30000)
-    parser.add_argument('--max-len', type=int, help='max input length', default=200)
+    parser.add_argument('--max-len', type=int, help='max input length', default=128)
     parser.add_argument('--dataset', type=str, default='ag_news', choices=['ag_news', 'dbpedia_14', 'banking77', 'emotion', 'rotten_tomatoes','imdb', 'clinc_oos', 'yelp_review_full', 'sst2', 
                                                                            'paint','ailerons',"criteo","ca_housing","kdd99"])
     parser.add_argument('--word-vec', type=str, default='glove')
@@ -51,6 +51,7 @@ def get_args():
     parser.add_argument('--feature-dim', type=int, default=0)
     parser.add_argument('--lr-schedule', type=str, default=None)
     parser.add_argument('--train-mask', type=int, default=None)
+    parser.add_argument('--prefix-mask', type=bool, default=False)
     args = parser.parse_args()
 
     try:
@@ -207,11 +208,11 @@ def main():
     gc.enable()
     args = get_args()
     if args.train_mask is not None:
-        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask}"
+        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask}{'_prefix' if args.prefix_mask else ''}"
     else:
         path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}"
     if args.train_mask is not None:
-        load_path = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask-1}"
+        load_path = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask-1}{'_prefix' if args.prefix_mask else ''}"
     
     if args.task == "text":
         train_loader, test_loader, class_num, vocab = get_data(args)
@@ -244,10 +245,12 @@ def main():
     model = model.cuda()
 
     if args.train_mask != None:
-        # layer_mask = {args.train_mask-1}
-        layer_mask = {*range(args.train_mask)}
-     
-    print("layer_mask",layer_mask)
+        if args.prefix_mask:
+            layer_mask = {*range(args.train_mask)}
+        else:
+            layer_mask = {args.train_mask-1}
+    else:
+        layer_mask = {*range(args.num_layer)}
     
     print('Start Training')
 
