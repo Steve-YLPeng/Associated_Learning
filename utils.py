@@ -379,6 +379,8 @@ def data_preprocessing(text, remove_stopword=False):
     else:
         text = [word for word in text.split()]
     text = ' '.join(text)
+    if len(text) == 0:
+        text = "<unk>"
     return text
 
 def create_vocab(corpus, vocab_size=30000):

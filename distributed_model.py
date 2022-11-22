@@ -117,6 +117,8 @@ class ENC(nn.Module):
             self.f = nn.LSTM(inp_dim, out_dim, bidirectional=True, batch_first=True)
         elif f == 'trans':
             self.f = TransformerEncoder(d_model=inp_dim, d_ff=out_dim, n_heads=n_heads)
+            #self.f = nn.TransformerEncoderLayer(d_model=inp_dim, nhead=6)
+            
             self.b = nn.Sequential(
                 nn.Linear(inp_dim, lab_dim),
                 nn.Tanh()
@@ -149,11 +151,14 @@ class ENC(nn.Module):
             enc_x, (h, c) = self.f(x, h)
         elif self.mode == 'trans':
             enc_x = self.f(x, mask=mask)
-        
+            #print(mask)
+            #enc_x = self.f(x, src_mask=mask)
+            
+            
         red_x = self.reduction(enc_x, mask, h)
         red_x = self.b(red_x)
         loss = self.cri(red_x, tgt)
-        
+
         return enc_x, loss, h, mask
 
     def reduction(self, x, mask=None, h=None):
@@ -220,7 +225,7 @@ class TransLayer(nn.Module):
         else:
             self.ae = AE(out_dim, lab_dim, cri=ae_cri)
 
-        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=0.0005)
+        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
         self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
         self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
@@ -231,7 +236,8 @@ class TransLayer(nn.Module):
         enc_y , ae_loss = self.ae(y)
         if self.training:
             ae_loss.backward()
-            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            #nn.utils.clip_grad_norm_(self.ae.parameters(), 0.001)
+            #nn.utils.clip_grad_value_(self.parameters(), 0.0001)
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
@@ -239,7 +245,8 @@ class TransLayer(nn.Module):
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
         if self.training:
             enc_loss.backward()
-            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            #nn.utils.clip_grad_norm_(self.enc.parameters(), 0.001)
+            #nn.utils.clip_grad_value_(self.parameters(), 0.0001)
             self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, mask        
@@ -474,8 +481,8 @@ class TransformerModelML(alModel):
                 layer_loss.append([ae_out.item(), as_out.item()])
             else:
                 x_out, y_out, ae_out, as_out, mask = layer(x_out, y_out, mask)
-                layer_loss.append([ae_out.item(), as_out.item()])
-                
+                layer_loss.append([ae_out.item(), as_out.item()])    
+        
         return layer_loss
     
     def get_mask(self, x):
@@ -831,3 +838,96 @@ class LinearALsideCLS(alModel):
             y_out = self.layers[idx].ae.h(y_out)
             
         return y_out
+    
+class TransformerALsideText(alModel):    
+    def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
+        super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
+        
+        assert num_layer == len(side_dim)
+        self.side_dim = side_dim
+        
+        emb_layers = ModuleList([])
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            
+            if word_vec is not None:
+                emb = nn.Embedding.from_pretrained(word_vec, freeze=False)
+            else:
+                emb = nn.Embedding(vocab_size, emb_dim) 
+            emb_layers.append(emb)
+            
+            layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
+            layers.append(layer)
+        
+        self.emb_layers = emb_layers
+        self.layers = layers  
+           
+    def forward(self, x, y):
+        
+        layer_loss = []
+        mask = self.get_mask(x)
+        y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        
+        x_side = self.sidedata(x)
+        mask_side = self.sidedata(mask)
+        
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            
+            emb_side = self.emb_layers(x_side[idx])
+            if idx == 0:
+                mask_cat = mask_side[0]                
+                x_out, y_out, ae_out, as_out, mask = layer(emb_side, y, mask_cat)
+                layer_loss.append([ae_out.item(), as_out.item()])
+            else:
+                x_cat = torch.cat((x_out, emb_side), dim=-1)
+                mask_cat = torch.cat((mask_cat, mask_side[idx]), dim=-1)
+                x_out, y_out, ae_out, as_out, mask = layer(x_cat, y_out, mask_cat)
+                layer_loss.append([ae_out.item(), as_out.item()])
+        
+        return layer_loss
+    
+    def get_mask(self, x):
+        pad_mask = ~(x == 0)
+        return pad_mask.cuda()
+    
+    def sidedata(self, x):
+        return torch.split(x, self.side_dim, -1)
+    
+    @torch.no_grad()
+    def inference(self, x, len_path=None):
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        mask = self.get_mask(x)
+        x_side = self.sidedata(x)
+        mask_side = self.sidedata(mask)
+        
+        
+        
+        for idx in range(len_path):
+            emb_side = self.emb_layers(x_side[idx].long())
+            
+            if idx == 0:
+                mask_cat = mask_side[0]                
+                x_out = self.layers[idx].enc.f(emb_side, mask_cat)        
+                
+            else:
+                x_cat = torch.cat((x_out, emb_side), dim=-1)
+                mask_cat = torch.cat((mask_cat, mask_side[idx]), dim=-1)
+                x_out = self.layers[idx].enc.f(x_cat, mask_cat)                        
+                     
+        # bridge        
+        denom = torch.sum(mask_cat, -1, keepdim=True)
+        x_out = torch.sum(x_out * mask_cat.unsqueeze(-1), dim=1) / denom
+            
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+            
+        return y_out
+        

@@ -76,6 +76,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
             
             #print(step)
             x, y = x.cuda(), y.cuda()
+
             losses = model(x, y)
             tot_loss.append(losses)
             
@@ -92,11 +93,13 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
             #gc.collect()
         train_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
+        
+        
         train_loss = numpy.sum(tot_loss, axis=0)
         model.history["train_AUC"].append(train_AUC)
         model.history["train_acc"].append(train_acc)
         model.history["train_loss"].append(train_loss)
-        print(train_loss)
+        #print(train_loss)
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num}), AUC {train_AUC}')
         del y_out
         del y_tar
