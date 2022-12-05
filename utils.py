@@ -1,5 +1,6 @@
 from torch.utils.data import DataLoader, Dataset
 from torch.nn.utils.rnn import pad_sequence
+from torch.nn import ConstantPad1d
 import re
 from nltk.corpus import stopwords
 import string
@@ -26,6 +27,8 @@ def get_data(args):
         class_num = 2
         df = pd.read_csv('./IMDB_Dataset.csv')
         df['cleaned_reviews'] = df['review'].apply(data_preprocessing, True)
+        #df["seq_lenth"] = df["cleaned_reviews"].apply(lambda x:len(x.split()))
+        #df = df[df["seq_lenth"]>100]
         corpus = [word for text in df['cleaned_reviews'] for word in text.split()]
         text = [t for t in df['cleaned_reviews']]
         label = []
@@ -428,20 +431,33 @@ class Textset(Dataset):
 
         new_text = []
         for t in text:
-            if len(t) > max_len:
-                t = t[:max_len]
-                new_text.append(t)
+            words = t.split()
+            if len(words) > max_len:
+                text = " ".join(words[:max_len])
+                new_text.append(text)
             else:
-                new_text.append(t)
+                text = " ".join(words[:]+["<pad>"]*(max_len-len(words)))
+                new_text.append(text)
+            """
+            if len(t) > max_len:
+                    t = t[:max_len]
+                    new_text.append(t)
+                else:
+                    new_text.append(t)
+            """
+            
         self.x = new_text
         self.y = label
         self.vocab = vocab
-    
+        self.max_len = max_len
     def collate(self, batch):
         
         x = [torch.tensor(x) for x,y in batch]
         y = [y for x,y in batch]
-        x_tensor = pad_sequence(x, True)
+        #x[0] = ConstantPad1d((0, self.max_len - x[0].shape[0]), 0)(x[0])
+
+        x_tensor = pad_sequence(x, batch_first=True)
+        #print(x_tensor)
         y = torch.tensor(y)
         return x_tensor, y
 

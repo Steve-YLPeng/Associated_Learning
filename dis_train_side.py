@@ -42,6 +42,7 @@ def get_args():
 
     # dir param
     parser.add_argument('--save-dir', type=str, default='./ckpt/')
+    parser.add_argument('--out-dir', type=str, default='./result/')
 
     # YLP
     parser.add_argument('--load-dir', type=str, default=None)
@@ -52,6 +53,7 @@ def get_args():
     parser.add_argument('--lr-schedule', type=str, default=None)
     parser.add_argument('--train-mask', type=int, default=None)
     parser.add_argument('--prefix-mask', type=bool, default=False)
+    parser.add_argument('--side-dim', type=str, default=None)
     args = parser.parse_args()
 
     try:
@@ -76,7 +78,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
             
             #print(step)
             x, y = x.cuda(), y.cuda()
-
+            #print("size",x.shape,y.shape)
             losses = model(x, y)
             tot_loss.append(losses)
             
@@ -210,12 +212,25 @@ def predicting_for_sst(args, model, vocab):
 def main():
     gc.enable()
     args = get_args()
-    if args.train_mask is not None:
-        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask}{'_prefix' if args.prefix_mask else ''}"
-    else:
-        path_name = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}"
-    if args.train_mask is not None:
-        load_path = f"{args.dataset}/{args.dataset}_{args.model}_l{args.num_layer}_m{args.train_mask-1}{'_prefix' if args.prefix_mask else ''}"
+    if args.side_dim is not None:
+        args.side_dim = [int(dim) for dim in args.side_dim.split("-")]
+        args.num_layer = len(args.side_dim)
+    
+    
+    path_name = f"{args.dataset}_{args.model}_l{args.num_layer}"
+    
+    if args.prefix_mask:
+        path_name += '_prefix'
+    if args.side_dim is not None:
+        path_name += '_side'
+    
+    
+    save_path = f"{args.save_dir}/{path_name}"
+    out_path = f"{args.out_dir}/{path_name}"
+    if args.load_dir is not None:
+        load_path = f"{args.load_dir}/{path_name}"
+    
+        
     
     if args.task == "text":
         train_loader, test_loader, class_num, vocab = get_data(args)
@@ -227,22 +242,24 @@ def main():
             model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'transformeral':
             model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
-    
+        elif args.model == 'transformeralside':
+            model = TransformerALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, 
+                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
     elif args.task == "classification":
         train_loader, test_loader, class_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         elif args.model == 'linearalside' :
-            model = LinearALsideCLS(num_layer=args.num_layer, side_dim=[8,8,8,8,6], class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
+            model = LinearALsideCLS(num_layer=args.num_layer, side_dim=args.side_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
     elif args.task == "regression":
         train_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
 
     if args.load_dir != None:
-        print("Load ckpt from", args.load_dir+f'/{load_path}.pt')
+        print("Load ckpt from", f'{load_path}.pt')
         
-        model.load_state_dict(torch.load(args.load_dir+f'/{load_path}.pt'))
+        model.load_state_dict(torch.load(f'{load_path}.pt'))
     else:
         model.apply(initialize_weights)
     model = model.cuda()
@@ -274,8 +291,8 @@ def main():
                     print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
                     if layer in layer_mask and AUC >= best_AUC:
                         best_AUC = AUC
-                        print("Save ckpt to", args.save_dir+f'/{path_name}.pt', " ,ep",epoch)
-                        torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
+                        print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
+                        torch.save(model.state_dict(), f'{save_path}.pt')
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
             
@@ -305,7 +322,7 @@ def main():
                     if layer in layer_mask and r2 > best_r2:
                         best_r2 = r2
                         best_layer = layer
-                        torch.save(model.state_dict(), args.save_dir+f'/{path_name}.pt')
+                        torch.save(model.state_dict(), f'{save_path}.pt')
                     
             model.history["valid_out"].append(valid_out)
             model.history["valid_r2"].append(valid_r2)
@@ -313,16 +330,16 @@ def main():
 
         print(f'Best r2 {best_r2} at L{best_layer}' )
             
-    plotResult(model,'result/'+ path_name, args.task)
+    plotResult(model, out_path, args.task)
     
     if args.dataset == 'sst2':
-        model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
+        model.load_state_dict(torch.load(f'{save_path}.pt'))
         predicting_for_sst(args, model, vocab)
 
     print('Start Testing')
     if args.task == "text" or args.task == "classification":
-        print("Load ckpt at",args.save_dir+f'/{path_name}.pt')
-        model.load_state_dict(torch.load(args.save_dir+f'/{path_name}.pt'))
+        print("Load ckpt at",f'{save_path}.pt')
+        model.load_state_dict(torch.load(f'{save_path}.pt'))
         model.eval()
         with torch.no_grad():
             for layer in range(model.num_layer):
@@ -333,7 +350,7 @@ def main():
                     y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu().int()), 0).int()
                     y_tar = torch.cat((y_tar, y.view(-1).cpu().int()), 0).int()
                     #gc.collect()
-                plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(23)], 'result/'+ f"{path_name}_test_l{layer}")
+                plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
         
         
     
