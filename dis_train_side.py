@@ -54,6 +54,8 @@ def get_args():
     parser.add_argument('--train-mask', type=int, default=None)
     parser.add_argument('--prefix-mask', type=bool, default=False)
     parser.add_argument('--side-dim', type=str, default=None)
+    parser.add_argument('--same-emb', type=bool, default=False)
+
     args = parser.parse_args()
 
     try:
@@ -148,23 +150,29 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
     if task == "text" or task == "classification":
         model.eval()
         cor, num = 0, 0
-        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
+        #y_out, y_tar = torch.Tensor([]),torch.Tensor([])
+        y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
+        
         #data_loader = tqdm(data_loader)
         for x, y in data_loader:
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
+            
+            y_entr = torch.cat((y_entr, torch.sum(torch.special.entr(pred).cpu(),dim=-1)), 0)            
             y_out = torch.cat((y_out, pred.cpu()), 0)
             y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
             #cor += (pred.argmax(-1) == y).sum().item()
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
             #gc.collect()
+        #print(y_entr)
+        valid_entr = torch.mean(y_entr).item()
         valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         valid_acc = cor/num
         #del y_out
         #del y_tar
         #print("test_gc",gc.collect())
-        return valid_AUC, valid_acc
+        return valid_AUC, valid_acc, valid_entr
     
     elif task == "regression":
         model.eval()
@@ -242,9 +250,18 @@ def main():
             model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'transformeral':
             model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+        
         elif args.model == 'transformeralside':
-            model = TransformerALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, 
+            model = TransformerALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
                                           emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+        elif args.model == 'linearalside':
+            model = LinearALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
+                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+        elif args.model == 'lstmalside':
+            model = LSTMALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
+                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+        
+        
     elif args.task == "classification":
         train_loader, test_loader, class_num  = get_data(args)
         if args.model == 'linearal':
@@ -280,21 +297,23 @@ def main():
         for epoch in range(args.epoch):
             print("gc",gc.collect())
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask)
-            valid_acc,valid_AUC = [],[]
+            valid_acc,valid_AUC,valid_entr = [],[],[]
             with torch.no_grad():
                 for layer in range(model.num_layer):
-                    AUC, acc = test(model, test_loader, shortcut=layer+1, task=args.task)
+                    AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
+                    valid_entr.append(entr)
                     if args.lr_schedule != None:
                         model.schedulerStep(layer,AUC)
-                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}')
+                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
                     if layer in layer_mask and AUC >= best_AUC:
                         best_AUC = AUC
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
+            model.history["valid_entr"].append(valid_entr)
             
             
         print('Best AUC', best_AUC)
@@ -343,15 +362,19 @@ def main():
         model.eval()
         with torch.no_grad():
             for layer in range(model.num_layer):
-                y_out, y_tar = torch.Tensor([]),torch.Tensor([])
+                y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
                 for x, y in test_loader:
                     x, y = x.cuda(), y.cuda()
                     pred = model.inference(x, layer+1)
+                    
+                    y_entr = torch.cat((y_entr, torch.sum(torch.special.entr(pred).cpu(),dim=-1)), 0)
+                    #print(torch.special.entr(pred))
                     y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu().int()), 0).int()
                     y_tar = torch.cat((y_tar, y.view(-1).cpu().int()), 0).int()
                     #gc.collect()
                 plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
-        
+                print(y_entr)
+                
         
     
 main()

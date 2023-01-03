@@ -310,6 +310,16 @@ def plotResult(model, save_filename, task):
         plt.savefig(save_filename+"_AUC.png")
         plt.show()
         
+        # plot epoch entropy
+        epoch_valid_entr = numpy.array(history["valid_entr"]).T
+        for idx,entr in enumerate(epoch_valid_entr):
+            plt.plot(entr, label='valid entr L'+str(idx+1))
+        #plt.plot(history["train_entr"], "k", label='train_entr' )
+        #plt.ylim(0.9, 1.0)
+        plt.legend()
+        plt.savefig(save_filename+"_entr.png")
+        plt.show()
+        
     if task == "regression":
         epoch_valid_out = numpy.array(history["valid_out"]).T
         for idx,out_loss in enumerate(epoch_valid_out):
