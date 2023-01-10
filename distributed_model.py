@@ -4,7 +4,7 @@ from transformer.encoder import TransformerEncoder
 from torch.nn import ModuleList
 from typing import List
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-
+import math
 
 def initialize_weights(model):
     if isinstance(model, nn.Linear):
@@ -80,7 +80,7 @@ class AE(nn.Module):
                 )
             if cri == 'mse' :
                 self.cri = nn.MSELoss()
-            else :
+            elif cri == 'ce':
                 self.cri = nn.CrossEntropyLoss()
             
         self.mode = cri
@@ -101,7 +101,7 @@ class ENC(nn.Module):
     #   b: Bridge function
     # cri: Loss function for associated loss
     ############################################
-    def __init__(self, inp_dim, out_dim, lab_dim=128, f='emb', n_heads=4, word_vec=None):
+    def __init__(self, inp_dim, out_dim, lab_dim=128, f='emb', n_heads=4, word_vec=None, bidirectional=True):
         super().__init__()
         
         self.b = nn.Sequential(
@@ -115,7 +115,7 @@ class ENC(nn.Module):
             if word_vec is not None:
                 self.f = nn.Embedding.from_pretrained(word_vec, freeze=False)
         elif f == 'lstm':
-            self.f = nn.LSTM(inp_dim, out_dim, bidirectional=True, batch_first=True)
+            self.f = nn.LSTM(inp_dim, out_dim, bidirectional=bidirectional, batch_first=True)
         elif f == 'trans':
             self.f = TransformerEncoder(d_model=inp_dim, d_ff=out_dim, n_heads=n_heads)
             #self.f = nn.TransformerEncoderLayer(d_model=inp_dim, nhead=6)
@@ -149,7 +149,9 @@ class ENC(nn.Module):
         elif self.mode == 'linear' :
             enc_x = self.f(x)
         elif self.mode == 'lstm':
-            enc_x, (h, c) = self.f(x, h)
+            enc_x, h = self.f(x, h)
+            #print(f"enc h {h[0].size()}") # 2x128x300
+            #print(f"enc c {h[1].size()}")
         elif self.mode == 'trans':
             enc_x = self.f(x, mask=mask)
             #print(mask)
@@ -162,14 +164,15 @@ class ENC(nn.Module):
 
         return enc_x, loss, h, mask
 
-    def reduction(self, x, mask=None, h=None):
+    def reduction(self, x, mask=None, hidden=None):
 
         # to match bridge function
         if self.mode == 'emb':
             return x.mean(1)
 
         elif self.mode == 'lstm':
-            _h = h[0] + h[1]
+            (h,c) = hidden
+            _h = torch.sum(h, dim=0)
             return _h
 
         elif self.mode == 'trans':
@@ -207,7 +210,7 @@ class EMBLayer(nn.Module):
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
-        tgt = enc_y.clone().detach()
+        tgt = enc_y.detach()
         enc_x, enc_loss, hidden, mask = self.enc(x, tgt, mask, h)
         if self.training:
             enc_loss.backward()
@@ -243,7 +246,7 @@ class TransLayer(nn.Module):
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
-        tgt = enc_y.clone().detach()
+        tgt = enc_y.detach()
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
         if self.training:
             enc_loss.backward()
@@ -255,10 +258,10 @@ class TransLayer(nn.Module):
         return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss, mask        
 
 class LSTMLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None):
+    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None, bidirectional=True):
         super().__init__()
 
-        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='lstm')
+        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='lstm', bidirectional=bidirectional)
         if out_dim == None:
             self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
         else:
@@ -279,15 +282,19 @@ class LSTMLayer(nn.Module):
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
-        tgt = enc_y.clone().detach()
+        tgt = enc_y.detach()
         enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
         if self.training:
             enc_loss.backward()
             #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
             self.enc_opt.step()
         (h, c) = hidden
-        h = h.reshape(2, x.size(0), -1)
-        hidden = (h.clone().detach(), c.clone().detach())
+        
+        #print(f"h {h.size()}")
+        #h = h.reshape(2, x.size(0), -1)
+        #print(f"h re {h.size()}")
+        
+        hidden = (h.detach(), c.detach())
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
         return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss, [hidden, mask]
@@ -317,7 +324,7 @@ class LinearLayer(nn.Module):
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
-        tgt = enc_y.clone().detach()
+        tgt = enc_y.detach()
         enc_x, enc_loss, _, _ = self.enc(x, tgt)
         if self.training:
             enc_loss.backward()
@@ -452,7 +459,18 @@ class alModel(nn.Module):
                     for param in self.layers[layer].parameters():
                         param.requires_grad = False
         else:
-            super().train(is_train)  
+            super().train(is_train) 
+             
+    def summary(self):
+        print("model:",self)  
+        total_params = 0
+        for name, parameter in self.named_parameters():
+            if not parameter.requires_grad: continue
+            params = parameter.numel()
+            total_params+=params
+            print(name, params)
+        print(f"Total Trainable Params: {total_params}")
+        return total_params
 
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
@@ -462,8 +480,6 @@ class TransformerModelML(alModel):
         for idx in range(self.num_layer):
             if idx == 0:
                 layer = EMBLayer(vocab_size, lab_dim, emb_dim, lr = 0.001, class_num=class_num, word_vec=word_vec)
-            #elif idx == 1:
-            #    layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
             else:
                 layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
             layers.append(layer)
@@ -490,6 +506,68 @@ class TransformerModelML(alModel):
     def get_mask(self, x):
         pad_mask = ~(x == 0)
         return pad_mask.cuda()
+    
+    ### 
+    def layer_forward(self, x, idx, mask):
+        if idx==0: # embed
+            x_out = self.layers[idx].enc.f(x.long())          
+        else: # transformer encoder
+            x_out = self.layers[idx].enc.f(x, mask)
+        return x_out
+    
+    def bridge_return(self, x, len_path, mask):
+        if len_path == 0:
+            x_out = x.mean(1)  
+        else:
+            denom = torch.sum(mask, -1, keepdim=True)
+            x_out = torch.sum(x * mask.unsqueeze(-1), dim=1) / denom
+            
+        y_out = self.layers[len_path].enc.b(x_out) 
+        
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)  
+            
+        return y_out
+             
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1):
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        mask = self.get_mask(x)
+        x_out = x
+        for idx in range(self.num_layer):
+            # f forward
+            x_out = self.layer_forward(x_out, idx, mask)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx, mask)
+            #y_out = torch.rand(x_out.size())
+
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+
+            total_remain_idx = entr>threshold
+            #print("total",total_remain_idx)
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            #print("entr",entr.size())
+            #print("pred",pred.size())
+            remain_idx = y_entr>threshold
+            #print(f"\n{idx}")
+            
+            #print("remain",remain_idx)
+            
+            #print("x",x_out)
+            x_out = x_out[remain_idx,:]
+            mask = mask[remain_idx,:]
+            
+            #print("x_remain",x_out)
+            if x_out.size(0) == 0:
+                break
+    
+        return pred, entr
     
     @torch.no_grad()
     def inference(self, x, len_path=None):
@@ -587,7 +665,7 @@ class LSTMModelML(alModel):
         if len_path == 1:
             x_out = x_out.mean(1)  
         else:
-            x_out = h[0] + h[1]
+            x_out = torch.sum(h, dim=0)
             
         y_out = self.layers[len_path-1].enc.b(x_out)
         
@@ -670,12 +748,12 @@ class LinearALRegress(alModel):
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
-                act = [nn.Tanh(),None]
-                #act = [None,None]
+                act = [nn.Tanh(), None]
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_act=act)
             else:
-                layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr)
+                act = [nn.Tanh(), None]
+                layer = LinearLayer(l1_dim, lab_dim, l1_dim, lr=lr, ae_act=act)
             layers.append(layer)
         
         self.layers = layers     
@@ -684,13 +762,10 @@ class LinearALRegress(alModel):
     def forward(self, x, y):
         
         layer_loss = []
-        #y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
         
         # forward function also update
         for idx,layer in enumerate(self.layers):
             if idx == 0:
-                #print(x.shape)
-                #print(y.shape)
                 x_out, y_out, ae_out, as_out = layer(x, y)
                 layer_loss.append([ae_out.item(), as_out.item()])
                 
@@ -845,6 +920,7 @@ class LinearALsideCLS(alModel):
             
         return y_out
 
+### AL sideinput model template for text cls task
 class alSideModel(alModel): 
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
@@ -852,9 +928,10 @@ class alSideModel(alModel):
         assert emb_dim == l1_dim
         self.side_dim = side_dim
         self.same_emb = same_emb
-        
+        self.emb_layers = ModuleList([])
+        self.layers = ModuleList([])
     def sidedata(self, x):
-        return tuple(x for _ in range(self.num_layer))
+        #return x
         return torch.split(x, self.side_dim, -1)
     
 class LinearALsideText(alSideModel): 
@@ -884,7 +961,8 @@ class LinearALsideText(alSideModel):
                 layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, out_dim = class_num, 
                                     ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
             else:
-                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr)
+                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, 
+                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
             layers.append(layer)
         self.layers = layers  
     
@@ -933,9 +1011,9 @@ class LinearALsideText(alSideModel):
   
         for idx in range(len_path):
             if self.same_emb:
-                emb_side = self.emb(x_side[idx].long())
+                emb_side = self.emb(x_side[idx])
             else:
-                emb_side = self.emb_layers[idx](x_side[idx].long())
+                emb_side = self.emb_layers[idx](x_side[idx])
             emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
             
             if idx == 0:              
@@ -981,9 +1059,10 @@ class TransformerALsideText(alSideModel):
         for idx in range(self.num_layer):                
             if idx == 0:
                 layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr, out_dim = class_num,
-                                   ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
+                                    ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
             else:
-                layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr)
+                layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr, 
+                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
             
             layers.append(layer)
         
@@ -997,24 +1076,29 @@ class TransformerALsideText(alSideModel):
         
         #print(f"x{x.shape}")
         x_side = self.sidedata(x)
-        mask_side = self.sidedata(mask)
+        mask_split = self.sidedata(mask)
         
         # forward function also update
         for idx,layer in enumerate(self.layers):
             if self.same_emb:
                 emb_side = self.emb(x_side[idx])
+                mask_side =  mask_split[idx]
             else:
                 emb_side = self.emb_layers[idx](x_side[idx])
+                mask_side =  mask_split[idx]
                 
             if idx == 0:
-                mask_cat = mask_side[0]                
-                x_out, y_out, ae_out, as_out, mask = layer(emb_side, y, mask_cat)
+                mask_cat = mask_side             
+                x_out, y_out, ae_out, as_out, mask_cat = layer(emb_side, y, mask_cat)
                 layer_loss.append([ae_out.item(), as_out.item()])
             else:
+                print(f"idx{idx}",x_out.size())
                 x_cat = torch.cat((x_out, emb_side), dim=1)
-                mask_cat = torch.cat((mask_cat, mask_side[idx]), dim=1)
+                print(f"idx{idx} cat",x_cat.size())
+                mask_cat = torch.cat((mask_cat, mask_side), dim=1)
+                print(f"idx{idx} mask",mask_cat.size())
                 
-                x_out, y_out, ae_out, as_out, mask = layer(x_cat, y_out, mask_cat)
+                x_out, y_out, ae_out, as_out, mask_cat = layer(x_cat, y_out, mask_cat)
                 layer_loss.append([ae_out.item(), as_out.item()])
         return layer_loss
     
@@ -1032,23 +1116,25 @@ class TransformerALsideText(alSideModel):
         
         mask = self.get_mask(x)
         x_side = self.sidedata(x)
-        mask_side = self.sidedata(mask)
+        mask_split = self.sidedata(mask)
         
         
         
         for idx in range(len_path):
             if self.same_emb:
-                emb_side = self.emb(x_side[idx].long())
+                emb_side = self.emb(x_side[idx])
+                mask_side = mask_split[idx]
             else:
-                emb_side = self.emb_layers[idx](x_side[idx].long())
+                emb_side = self.emb_layers[idx](x_side[idx])
+                mask_side = mask_split[idx]
             
             if idx == 0:
-                mask_cat = mask_side[0]                
+                mask_cat = mask_side
                 x_out = self.layers[idx].enc.f(emb_side, mask_cat)        
                 
             else:
                 x_cat = torch.cat((x_out, emb_side), dim=1)
-                mask_cat = torch.cat((mask_cat, mask_side[idx]), dim=1)
+                mask_cat = torch.cat((mask_cat, mask_side), dim=1)
                 x_out = self.layers[idx].enc.f(x_cat, mask_cat)                        
                      
         # bridge        
@@ -1065,6 +1151,9 @@ class TransformerALsideText(alSideModel):
 class LSTMALsideText(alSideModel):    
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
         super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
+        
+        self.bidirectional = False
+        
         
         # emb 
         if self.same_emb:
@@ -1088,10 +1177,11 @@ class LSTMALsideText(alSideModel):
         for idx in range(self.num_layer):
               
             if idx == 0:
-                layer = LSTMLayer(emb_dim, lab_dim, l1_dim, lr=lr, out_dim = class_num,
-                                  ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
+                layer = LSTMLayer(emb_dim, lab_dim, l1_dim, lr=lr, out_dim = class_num, bidirectional=self.bidirectional,
+                                    ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
             else:
-                layer = LSTMLayer(emb_dim, lab_dim, l1_dim, lr=lr)
+                layer = LSTMLayer(emb_dim, lab_dim, l1_dim, lr=lr, bidirectional=self.bidirectional,
+                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
             
             layers.append(layer)
         self.layers = layers  
@@ -1114,11 +1204,20 @@ class LSTMALsideText(alSideModel):
             # emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
             if idx == 0:             
                 x_out, y_out, ae_out, as_out, [h, _] = layer(emb_side, y)
+                #print("idx0",x_out.size())
                 #x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
+                #print("idx0 cat",x_out.size())
                 layer_loss.append([ae_out.item(), as_out.item()])
             else:
-                x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
+                #print(f"idx{idx}",x_out.size())
+                if self.bidirectional:
+                    x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
+                else:
+                    x_cat = x_out
+                #print(f"idx{idx} cat",x_cat.size())
+                #print(f"idx{idx} emb",emb_side.size())
                 x_cat = torch.cat((x_cat, emb_side), dim=1)
+                #print(f"idx{idx} cat",x_cat.size())
                 x_out, y_out, ae_out, as_out, [h, _] = layer(x_cat, y_out, h)
 
                 layer_loss.append([ae_out.item(), as_out.item()])
@@ -1137,21 +1236,26 @@ class LSTMALsideText(alSideModel):
   
         for idx in range(len_path):
             if self.same_emb:
-                emb_side = self.emb(x_side[idx].long())
+                emb_side = self.emb(x_side[idx])
             else:
-                emb_side = self.emb_layers[idx](x_side[idx].long())
+                emb_side = self.emb_layers[idx](x_side[idx])
             
             if idx == 0:              
                 x_out, (h, c) = self.layers[idx].enc.f(emb_side)        
                 
             else:
                 #print(x_out.shape)
-                x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
+                if self.bidirectional:
+                    x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
+                else:
+                    x_cat = x_out
                 x_cat = torch.cat((x_cat, emb_side), dim=1)
                 x_out, (h, c) = self.layers[idx].enc.f(x_cat, (h, c))                 
                      
         # bridge   
-        h = h[0] + h[1]                 
+        #print(f"h {h.size()}")
+        h = torch.sum(h, dim=0)  
+        #print(f"h sum {h.size()}")          
         y_out = self.layers[len_path-1].enc.b(h)
         
         for idx in reversed(range(len_path)):

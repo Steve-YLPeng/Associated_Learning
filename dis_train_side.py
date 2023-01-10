@@ -280,7 +280,8 @@ def main():
     else:
         model.apply(initialize_weights)
     model = model.cuda()
-
+    model.summary()
+        
     if args.train_mask != None:
         if args.prefix_mask:
             layer_mask = {*range(args.train_mask)}
