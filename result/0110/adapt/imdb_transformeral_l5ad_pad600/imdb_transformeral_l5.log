@@ -1,0 +1,810 @@
+total count words 222751
+vocab size 30000
+found 27937 words in glove
+model: TransformerModelML(
+  (layers): ModuleList(
+    (0): EMBLayer(
+      (enc): ENC(
+        (b): Sequential(
+          (0): Linear(in_features=300, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (f): Embedding(30000, 300)
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=2, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=2, bias=True)
+          (1): Sigmoid()
+        )
+        (cri): CrossEntropyLoss()
+      )
+    )
+    (1): TransLayer(
+      (enc): ENC(
+        (b): Sequential(
+          (0): Linear(in_features=300, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (f): TransformerEncoder(
+          (multi_headed_attention): MultiHeadAttention(
+            (linears): ModuleList(
+              (0): Linear(in_features=300, out_features=300, bias=True)
+              (1): Linear(in_features=300, out_features=300, bias=True)
+              (2): Linear(in_features=300, out_features=300, bias=True)
+              (3): Linear(in_features=300, out_features=300, bias=True)
+            )
+            (sdpa): ScaledDotProductAttention()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (feed_forward): FeedForward(
+            (w_1): Linear(in_features=300, out_features=300, bias=True)
+            (w_2): Linear(in_features=300, out_features=300, bias=True)
+            (relu): ReLU()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (encoder_layer): EncoderLayer(
+            (self_attn): MultiHeadAttention(
+              (linears): ModuleList(
+                (0): Linear(in_features=300, out_features=300, bias=True)
+                (1): Linear(in_features=300, out_features=300, bias=True)
+                (2): Linear(in_features=300, out_features=300, bias=True)
+                (3): Linear(in_features=300, out_features=300, bias=True)
+              )
+              (sdpa): ScaledDotProductAttention()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (feed_forward): FeedForward(
+              (w_1): Linear(in_features=300, out_features=300, bias=True)
+              (w_2): Linear(in_features=300, out_features=300, bias=True)
+              (relu): ReLU()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (sublayer): ModuleList(
+              (0): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (1): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (encoder): Encoder(
+            (layers): ModuleList(
+              (0): EncoderLayer(
+                (self_attn): MultiHeadAttention(
+                  (linears): ModuleList(
+                    (0): Linear(in_features=300, out_features=300, bias=True)
+                    (1): Linear(in_features=300, out_features=300, bias=True)
+                    (2): Linear(in_features=300, out_features=300, bias=True)
+                    (3): Linear(in_features=300, out_features=300, bias=True)
+                  )
+                  (sdpa): ScaledDotProductAttention()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (feed_forward): FeedForward(
+                  (w_1): Linear(in_features=300, out_features=300, bias=True)
+                  (w_2): Linear(in_features=300, out_features=300, bias=True)
+                  (relu): ReLU()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (sublayer): ModuleList(
+                  (0): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                  (1): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                )
+              )
+            )
+            (norm): LayerNorm()
+          )
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+    (2): TransLayer(
+      (enc): ENC(
+        (b): Sequential(
+          (0): Linear(in_features=300, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (f): TransformerEncoder(
+          (multi_headed_attention): MultiHeadAttention(
+            (linears): ModuleList(
+              (0): Linear(in_features=300, out_features=300, bias=True)
+              (1): Linear(in_features=300, out_features=300, bias=True)
+              (2): Linear(in_features=300, out_features=300, bias=True)
+              (3): Linear(in_features=300, out_features=300, bias=True)
+            )
+            (sdpa): ScaledDotProductAttention()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (feed_forward): FeedForward(
+            (w_1): Linear(in_features=300, out_features=300, bias=True)
+            (w_2): Linear(in_features=300, out_features=300, bias=True)
+            (relu): ReLU()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (encoder_layer): EncoderLayer(
+            (self_attn): MultiHeadAttention(
+              (linears): ModuleList(
+                (0): Linear(in_features=300, out_features=300, bias=True)
+                (1): Linear(in_features=300, out_features=300, bias=True)
+                (2): Linear(in_features=300, out_features=300, bias=True)
+                (3): Linear(in_features=300, out_features=300, bias=True)
+              )
+              (sdpa): ScaledDotProductAttention()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (feed_forward): FeedForward(
+              (w_1): Linear(in_features=300, out_features=300, bias=True)
+              (w_2): Linear(in_features=300, out_features=300, bias=True)
+              (relu): ReLU()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (sublayer): ModuleList(
+              (0): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (1): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (encoder): Encoder(
+            (layers): ModuleList(
+              (0): EncoderLayer(
+                (self_attn): MultiHeadAttention(
+                  (linears): ModuleList(
+                    (0): Linear(in_features=300, out_features=300, bias=True)
+                    (1): Linear(in_features=300, out_features=300, bias=True)
+                    (2): Linear(in_features=300, out_features=300, bias=True)
+                    (3): Linear(in_features=300, out_features=300, bias=True)
+                  )
+                  (sdpa): ScaledDotProductAttention()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (feed_forward): FeedForward(
+                  (w_1): Linear(in_features=300, out_features=300, bias=True)
+                  (w_2): Linear(in_features=300, out_features=300, bias=True)
+                  (relu): ReLU()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (sublayer): ModuleList(
+                  (0): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                  (1): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                )
+              )
+            )
+            (norm): LayerNorm()
+          )
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+    (3): TransLayer(
+      (enc): ENC(
+        (b): Sequential(
+          (0): Linear(in_features=300, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (f): TransformerEncoder(
+          (multi_headed_attention): MultiHeadAttention(
+            (linears): ModuleList(
+              (0): Linear(in_features=300, out_features=300, bias=True)
+              (1): Linear(in_features=300, out_features=300, bias=True)
+              (2): Linear(in_features=300, out_features=300, bias=True)
+              (3): Linear(in_features=300, out_features=300, bias=True)
+            )
+            (sdpa): ScaledDotProductAttention()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (feed_forward): FeedForward(
+            (w_1): Linear(in_features=300, out_features=300, bias=True)
+            (w_2): Linear(in_features=300, out_features=300, bias=True)
+            (relu): ReLU()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (encoder_layer): EncoderLayer(
+            (self_attn): MultiHeadAttention(
+              (linears): ModuleList(
+                (0): Linear(in_features=300, out_features=300, bias=True)
+                (1): Linear(in_features=300, out_features=300, bias=True)
+                (2): Linear(in_features=300, out_features=300, bias=True)
+                (3): Linear(in_features=300, out_features=300, bias=True)
+              )
+              (sdpa): ScaledDotProductAttention()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (feed_forward): FeedForward(
+              (w_1): Linear(in_features=300, out_features=300, bias=True)
+              (w_2): Linear(in_features=300, out_features=300, bias=True)
+              (relu): ReLU()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (sublayer): ModuleList(
+              (0): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (1): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (encoder): Encoder(
+            (layers): ModuleList(
+              (0): EncoderLayer(
+                (self_attn): MultiHeadAttention(
+                  (linears): ModuleList(
+                    (0): Linear(in_features=300, out_features=300, bias=True)
+                    (1): Linear(in_features=300, out_features=300, bias=True)
+                    (2): Linear(in_features=300, out_features=300, bias=True)
+                    (3): Linear(in_features=300, out_features=300, bias=True)
+                  )
+                  (sdpa): ScaledDotProductAttention()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (feed_forward): FeedForward(
+                  (w_1): Linear(in_features=300, out_features=300, bias=True)
+                  (w_2): Linear(in_features=300, out_features=300, bias=True)
+                  (relu): ReLU()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (sublayer): ModuleList(
+                  (0): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                  (1): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                )
+              )
+            )
+            (norm): LayerNorm()
+          )
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+    (4): TransLayer(
+      (enc): ENC(
+        (b): Sequential(
+          (0): Linear(in_features=300, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (f): TransformerEncoder(
+          (multi_headed_attention): MultiHeadAttention(
+            (linears): ModuleList(
+              (0): Linear(in_features=300, out_features=300, bias=True)
+              (1): Linear(in_features=300, out_features=300, bias=True)
+              (2): Linear(in_features=300, out_features=300, bias=True)
+              (3): Linear(in_features=300, out_features=300, bias=True)
+            )
+            (sdpa): ScaledDotProductAttention()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (feed_forward): FeedForward(
+            (w_1): Linear(in_features=300, out_features=300, bias=True)
+            (w_2): Linear(in_features=300, out_features=300, bias=True)
+            (relu): ReLU()
+            (dropout): Dropout(p=0.1, inplace=False)
+          )
+          (encoder_layer): EncoderLayer(
+            (self_attn): MultiHeadAttention(
+              (linears): ModuleList(
+                (0): Linear(in_features=300, out_features=300, bias=True)
+                (1): Linear(in_features=300, out_features=300, bias=True)
+                (2): Linear(in_features=300, out_features=300, bias=True)
+                (3): Linear(in_features=300, out_features=300, bias=True)
+              )
+              (sdpa): ScaledDotProductAttention()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (feed_forward): FeedForward(
+              (w_1): Linear(in_features=300, out_features=300, bias=True)
+              (w_2): Linear(in_features=300, out_features=300, bias=True)
+              (relu): ReLU()
+              (dropout): Dropout(p=0.1, inplace=False)
+            )
+            (sublayer): ModuleList(
+              (0): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+              (1): SublayerConnection(
+                (norm): LayerNorm()
+                (dropout): Dropout(p=0.1, inplace=False)
+              )
+            )
+          )
+          (encoder): Encoder(
+            (layers): ModuleList(
+              (0): EncoderLayer(
+                (self_attn): MultiHeadAttention(
+                  (linears): ModuleList(
+                    (0): Linear(in_features=300, out_features=300, bias=True)
+                    (1): Linear(in_features=300, out_features=300, bias=True)
+                    (2): Linear(in_features=300, out_features=300, bias=True)
+                    (3): Linear(in_features=300, out_features=300, bias=True)
+                  )
+                  (sdpa): ScaledDotProductAttention()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (feed_forward): FeedForward(
+                  (w_1): Linear(in_features=300, out_features=300, bias=True)
+                  (w_2): Linear(in_features=300, out_features=300, bias=True)
+                  (relu): ReLU()
+                  (dropout): Dropout(p=0.1, inplace=False)
+                )
+                (sublayer): ModuleList(
+                  (0): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                  (1): SublayerConnection(
+                    (norm): LayerNorm()
+                    (dropout): Dropout(p=0.1, inplace=False)
+                  )
+                )
+              )
+            )
+            (norm): LayerNorm()
+          )
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Tanh()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+  )
+)
+layers.0.enc.b.0.weight 38400
+layers.0.enc.b.0.bias 128
+layers.0.enc.f.weight 9000000
+layers.0.ae.g.0.weight 256
+layers.0.ae.g.0.bias 128
+layers.0.ae.h.0.weight 256
+layers.0.ae.h.0.bias 2
+layers.1.enc.b.0.weight 38400
+layers.1.enc.b.0.bias 128
+layers.1.enc.f.multi_headed_attention.linears.0.weight 90000
+layers.1.enc.f.multi_headed_attention.linears.0.bias 300
+layers.1.enc.f.multi_headed_attention.linears.1.weight 90000
+layers.1.enc.f.multi_headed_attention.linears.1.bias 300
+layers.1.enc.f.multi_headed_attention.linears.2.weight 90000
+layers.1.enc.f.multi_headed_attention.linears.2.bias 300
+layers.1.enc.f.multi_headed_attention.linears.3.weight 90000
+layers.1.enc.f.multi_headed_attention.linears.3.bias 300
+layers.1.enc.f.feed_forward.w_1.weight 90000
+layers.1.enc.f.feed_forward.w_1.bias 300
+layers.1.enc.f.feed_forward.w_2.weight 90000
+layers.1.enc.f.feed_forward.w_2.bias 300
+layers.1.enc.f.encoder_layer.sublayer.0.norm.a 300
+layers.1.enc.f.encoder_layer.sublayer.0.norm.b 300
+layers.1.enc.f.encoder_layer.sublayer.1.norm.a 300
+layers.1.enc.f.encoder_layer.sublayer.1.norm.b 300
+layers.1.enc.f.encoder.layers.0.self_attn.linears.0.weight 90000
+layers.1.enc.f.encoder.layers.0.self_attn.linears.0.bias 300
+layers.1.enc.f.encoder.layers.0.self_attn.linears.1.weight 90000
+layers.1.enc.f.encoder.layers.0.self_attn.linears.1.bias 300
+layers.1.enc.f.encoder.layers.0.self_attn.linears.2.weight 90000
+layers.1.enc.f.encoder.layers.0.self_attn.linears.2.bias 300
+layers.1.enc.f.encoder.layers.0.self_attn.linears.3.weight 90000
+layers.1.enc.f.encoder.layers.0.self_attn.linears.3.bias 300
+layers.1.enc.f.encoder.layers.0.feed_forward.w_1.weight 90000
+layers.1.enc.f.encoder.layers.0.feed_forward.w_1.bias 300
+layers.1.enc.f.encoder.layers.0.feed_forward.w_2.weight 90000
+layers.1.enc.f.encoder.layers.0.feed_forward.w_2.bias 300
+layers.1.enc.f.encoder.layers.0.sublayer.0.norm.a 300
+layers.1.enc.f.encoder.layers.0.sublayer.0.norm.b 300
+layers.1.enc.f.encoder.layers.0.sublayer.1.norm.a 300
+layers.1.enc.f.encoder.layers.0.sublayer.1.norm.b 300
+layers.1.enc.f.encoder.norm.a 300
+layers.1.enc.f.encoder.norm.b 300
+layers.1.ae.g.0.weight 16384
+layers.1.ae.g.0.bias 128
+layers.1.ae.h.0.weight 16384
+layers.1.ae.h.0.bias 128
+layers.2.enc.b.0.weight 38400
+layers.2.enc.b.0.bias 128
+layers.2.enc.f.multi_headed_attention.linears.0.weight 90000
+layers.2.enc.f.multi_headed_attention.linears.0.bias 300
+layers.2.enc.f.multi_headed_attention.linears.1.weight 90000
+layers.2.enc.f.multi_headed_attention.linears.1.bias 300
+layers.2.enc.f.multi_headed_attention.linears.2.weight 90000
+layers.2.enc.f.multi_headed_attention.linears.2.bias 300
+layers.2.enc.f.multi_headed_attention.linears.3.weight 90000
+layers.2.enc.f.multi_headed_attention.linears.3.bias 300
+layers.2.enc.f.feed_forward.w_1.weight 90000
+layers.2.enc.f.feed_forward.w_1.bias 300
+layers.2.enc.f.feed_forward.w_2.weight 90000
+layers.2.enc.f.feed_forward.w_2.bias 300
+layers.2.enc.f.encoder_layer.sublayer.0.norm.a 300
+layers.2.enc.f.encoder_layer.sublayer.0.norm.b 300
+layers.2.enc.f.encoder_layer.sublayer.1.norm.a 300
+layers.2.enc.f.encoder_layer.sublayer.1.norm.b 300
+layers.2.enc.f.encoder.layers.0.self_attn.linears.0.weight 90000
+layers.2.enc.f.encoder.layers.0.self_attn.linears.0.bias 300
+layers.2.enc.f.encoder.layers.0.self_attn.linears.1.weight 90000
+layers.2.enc.f.encoder.layers.0.self_attn.linears.1.bias 300
+layers.2.enc.f.encoder.layers.0.self_attn.linears.2.weight 90000
+layers.2.enc.f.encoder.layers.0.self_attn.linears.2.bias 300
+layers.2.enc.f.encoder.layers.0.self_attn.linears.3.weight 90000
+layers.2.enc.f.encoder.layers.0.self_attn.linears.3.bias 300
+layers.2.enc.f.encoder.layers.0.feed_forward.w_1.weight 90000
+layers.2.enc.f.encoder.layers.0.feed_forward.w_1.bias 300
+layers.2.enc.f.encoder.layers.0.feed_forward.w_2.weight 90000
+layers.2.enc.f.encoder.layers.0.feed_forward.w_2.bias 300
+layers.2.enc.f.encoder.layers.0.sublayer.0.norm.a 300
+layers.2.enc.f.encoder.layers.0.sublayer.0.norm.b 300
+layers.2.enc.f.encoder.layers.0.sublayer.1.norm.a 300
+layers.2.enc.f.encoder.layers.0.sublayer.1.norm.b 300
+layers.2.enc.f.encoder.norm.a 300
+layers.2.enc.f.encoder.norm.b 300
+layers.2.ae.g.0.weight 16384
+layers.2.ae.g.0.bias 128
+layers.2.ae.h.0.weight 16384
+layers.2.ae.h.0.bias 128
+layers.3.enc.b.0.weight 38400
+layers.3.enc.b.0.bias 128
+layers.3.enc.f.multi_headed_attention.linears.0.weight 90000
+layers.3.enc.f.multi_headed_attention.linears.0.bias 300
+layers.3.enc.f.multi_headed_attention.linears.1.weight 90000
+layers.3.enc.f.multi_headed_attention.linears.1.bias 300
+layers.3.enc.f.multi_headed_attention.linears.2.weight 90000
+layers.3.enc.f.multi_headed_attention.linears.2.bias 300
+layers.3.enc.f.multi_headed_attention.linears.3.weight 90000
+layers.3.enc.f.multi_headed_attention.linears.3.bias 300
+layers.3.enc.f.feed_forward.w_1.weight 90000
+layers.3.enc.f.feed_forward.w_1.bias 300
+layers.3.enc.f.feed_forward.w_2.weight 90000
+layers.3.enc.f.feed_forward.w_2.bias 300
+layers.3.enc.f.encoder_layer.sublayer.0.norm.a 300
+layers.3.enc.f.encoder_layer.sublayer.0.norm.b 300
+layers.3.enc.f.encoder_layer.sublayer.1.norm.a 300
+layers.3.enc.f.encoder_layer.sublayer.1.norm.b 300
+layers.3.enc.f.encoder.layers.0.self_attn.linears.0.weight 90000
+layers.3.enc.f.encoder.layers.0.self_attn.linears.0.bias 300
+layers.3.enc.f.encoder.layers.0.self_attn.linears.1.weight 90000
+layers.3.enc.f.encoder.layers.0.self_attn.linears.1.bias 300
+layers.3.enc.f.encoder.layers.0.self_attn.linears.2.weight 90000
+layers.3.enc.f.encoder.layers.0.self_attn.linears.2.bias 300
+layers.3.enc.f.encoder.layers.0.self_attn.linears.3.weight 90000
+layers.3.enc.f.encoder.layers.0.self_attn.linears.3.bias 300
+layers.3.enc.f.encoder.layers.0.feed_forward.w_1.weight 90000
+layers.3.enc.f.encoder.layers.0.feed_forward.w_1.bias 300
+layers.3.enc.f.encoder.layers.0.feed_forward.w_2.weight 90000
+layers.3.enc.f.encoder.layers.0.feed_forward.w_2.bias 300
+layers.3.enc.f.encoder.layers.0.sublayer.0.norm.a 300
+layers.3.enc.f.encoder.layers.0.sublayer.0.norm.b 300
+layers.3.enc.f.encoder.layers.0.sublayer.1.norm.a 300
+layers.3.enc.f.encoder.layers.0.sublayer.1.norm.b 300
+layers.3.enc.f.encoder.norm.a 300
+layers.3.enc.f.encoder.norm.b 300
+layers.3.ae.g.0.weight 16384
+layers.3.ae.g.0.bias 128
+layers.3.ae.h.0.weight 16384
+layers.3.ae.h.0.bias 128
+layers.4.enc.b.0.weight 38400
+layers.4.enc.b.0.bias 128
+layers.4.enc.f.multi_headed_attention.linears.0.weight 90000
+layers.4.enc.f.multi_headed_attention.linears.0.bias 300
+layers.4.enc.f.multi_headed_attention.linears.1.weight 90000
+layers.4.enc.f.multi_headed_attention.linears.1.bias 300
+layers.4.enc.f.multi_headed_attention.linears.2.weight 90000
+layers.4.enc.f.multi_headed_attention.linears.2.bias 300
+layers.4.enc.f.multi_headed_attention.linears.3.weight 90000
+layers.4.enc.f.multi_headed_attention.linears.3.bias 300
+layers.4.enc.f.feed_forward.w_1.weight 90000
+layers.4.enc.f.feed_forward.w_1.bias 300
+layers.4.enc.f.feed_forward.w_2.weight 90000
+layers.4.enc.f.feed_forward.w_2.bias 300
+layers.4.enc.f.encoder_layer.sublayer.0.norm.a 300
+layers.4.enc.f.encoder_layer.sublayer.0.norm.b 300
+layers.4.enc.f.encoder_layer.sublayer.1.norm.a 300
+layers.4.enc.f.encoder_layer.sublayer.1.norm.b 300
+layers.4.enc.f.encoder.layers.0.self_attn.linears.0.weight 90000
+layers.4.enc.f.encoder.layers.0.self_attn.linears.0.bias 300
+layers.4.enc.f.encoder.layers.0.self_attn.linears.1.weight 90000
+layers.4.enc.f.encoder.layers.0.self_attn.linears.1.bias 300
+layers.4.enc.f.encoder.layers.0.self_attn.linears.2.weight 90000
+layers.4.enc.f.encoder.layers.0.self_attn.linears.2.bias 300
+layers.4.enc.f.encoder.layers.0.self_attn.linears.3.weight 90000
+layers.4.enc.f.encoder.layers.0.self_attn.linears.3.bias 300
+layers.4.enc.f.encoder.layers.0.feed_forward.w_1.weight 90000
+layers.4.enc.f.encoder.layers.0.feed_forward.w_1.bias 300
+layers.4.enc.f.encoder.layers.0.feed_forward.w_2.weight 90000
+layers.4.enc.f.encoder.layers.0.feed_forward.w_2.bias 300
+layers.4.enc.f.encoder.layers.0.sublayer.0.norm.a 300
+layers.4.enc.f.encoder.layers.0.sublayer.0.norm.b 300
+layers.4.enc.f.encoder.layers.0.sublayer.1.norm.a 300
+layers.4.enc.f.encoder.layers.0.sublayer.1.norm.b 300
+layers.4.enc.f.encoder.norm.a 300
+layers.4.enc.f.encoder.norm.b 300
+layers.4.ae.g.0.weight 16384
+layers.4.ae.g.0.bias 128
+layers.4.ae.h.0.weight 16384
+layers.4.ae.h.0.bias 128
+Total Trainable Params: 13671778
+Start Training
+gc 0
+Train Epoch0 Acc 0.52925 (21170/40000), AUC 0.5342214703559875
+Test Epoch0 threshold 0.2 Acc 0.8124, AUC 0.898842453956604, avg_entr 0.9100227355957031
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 0
+Test Epoch0 threshold 0.4 Acc 0.8125, AUC 0.8988863229751587, avg_entr 0.7982873916625977
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 0
+Test Epoch0 threshold 0.6 Acc 0.8124, AUC 0.8993568420410156, avg_entr 0.7157836556434631
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 0
+Test Epoch0 threshold 0.8 Acc 0.8142, AUC 0.8972027897834778, avg_entr 0.6956007480621338
+gc 0
+Train Epoch1 Acc 0.8592 (34368/40000), AUC 0.9231056571006775
+Test Epoch1 threshold 0.2 Acc 0.867, AUC 0.9472869634628296, avg_entr 0.1946907639503479
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 1
+Test Epoch1 threshold 0.4 Acc 0.872, AUC 0.9422815442085266, avg_entr 0.2256058156490326
+Test Epoch1 threshold 0.6 Acc 0.8769, AUC 0.9411545991897583, avg_entr 0.26385220885276794
+Test Epoch1 threshold 0.8 Acc 0.8807, AUC 0.9395021200180054, avg_entr 0.31185758113861084
+gc 0
+Train Epoch2 Acc 0.9129 (36516/40000), AUC 0.9674468040466309
+Test Epoch2 threshold 0.2 Acc 0.8965, AUC 0.9479318857192993, avg_entr 0.12017743289470673
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 2
+Test Epoch2 threshold 0.4 Acc 0.8972, AUC 0.9479320645332336, avg_entr 0.1653645634651184
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 2
+Test Epoch2 threshold 0.6 Acc 0.8981, AUC 0.9468182325363159, avg_entr 0.2129979282617569
+Test Epoch2 threshold 0.8 Acc 0.8996, AUC 0.9487714171409607, avg_entr 0.2619011700153351
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 2
+gc 0
+Train Epoch3 Acc 0.9356 (37424/40000), AUC 0.9786946177482605
+Test Epoch3 threshold 0.2 Acc 0.8934, AUC 0.9465919733047485, avg_entr 0.09442808479070663
+Test Epoch3 threshold 0.4 Acc 0.8941, AUC 0.9464256763458252, avg_entr 0.1367737501859665
+Test Epoch3 threshold 0.6 Acc 0.895, AUC 0.9474505186080933, avg_entr 0.17634259164333344
+Test Epoch3 threshold 0.8 Acc 0.897, AUC 0.9518389701843262, avg_entr 0.22115583717823029
+Save ckpt to ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt  ,ep 3
+gc 0
+Train Epoch4 Acc 0.94645 (37858/40000), AUC 0.98313307762146
+Test Epoch4 threshold 0.2 Acc 0.8964, AUC 0.9428650140762329, avg_entr 0.07535748928785324
+Test Epoch4 threshold 0.4 Acc 0.8982, AUC 0.9417837858200073, avg_entr 0.10898645222187042
+Test Epoch4 threshold 0.6 Acc 0.8988, AUC 0.9442384243011475, avg_entr 0.1422874927520752
+Test Epoch4 threshold 0.8 Acc 0.8999, AUC 0.9484360218048096, avg_entr 0.17807720601558685
+gc 0
+Train Epoch5 Acc 0.9565 (38260/40000), AUC 0.9878793358802795
+Test Epoch5 threshold 0.2 Acc 0.892, AUC 0.9350043535232544, avg_entr 0.06700636446475983
+Test Epoch5 threshold 0.4 Acc 0.8933, AUC 0.935603141784668, avg_entr 0.09924544394016266
+Test Epoch5 threshold 0.6 Acc 0.8942, AUC 0.9394041299819946, avg_entr 0.1319957673549652
+Test Epoch5 threshold 0.8 Acc 0.8962, AUC 0.9448691606521606, avg_entr 0.16783933341503143
+gc 0
+Train Epoch6 Acc 0.960025 (38401/40000), AUC 0.989570140838623
+Test Epoch6 threshold 0.2 Acc 0.8943, AUC 0.9361484050750732, avg_entr 0.06587589532136917
+Test Epoch6 threshold 0.4 Acc 0.8954, AUC 0.9342244863510132, avg_entr 0.09536024183034897
+Test Epoch6 threshold 0.6 Acc 0.8981, AUC 0.9392119646072388, avg_entr 0.12924692034721375
+Test Epoch6 threshold 0.8 Acc 0.8993, AUC 0.9440968036651611, avg_entr 0.16639116406440735
+gc 0
+Train Epoch7 Acc 0.96065 (38426/40000), AUC 0.9904407262802124
+Test Epoch7 threshold 0.2 Acc 0.8937, AUC 0.9347364902496338, avg_entr 0.06620179116725922
+Test Epoch7 threshold 0.4 Acc 0.8953, AUC 0.9342384934425354, avg_entr 0.09570904821157455
+Test Epoch7 threshold 0.6 Acc 0.8975, AUC 0.938632607460022, avg_entr 0.12667697668075562
+Test Epoch7 threshold 0.8 Acc 0.8983, AUC 0.9441366195678711, avg_entr 0.16293397545814514
+gc 0
+Train Epoch8 Acc 0.9617 (38468/40000), AUC 0.9907020926475525
+Test Epoch8 threshold 0.2 Acc 0.8942, AUC 0.9346295595169067, avg_entr 0.06487695127725601
+Test Epoch8 threshold 0.4 Acc 0.8955, AUC 0.9339891076087952, avg_entr 0.0944010391831398
+Test Epoch8 threshold 0.6 Acc 0.898, AUC 0.938753604888916, avg_entr 0.12695907056331635
+Test Epoch8 threshold 0.8 Acc 0.8989, AUC 0.9442446827888489, avg_entr 0.16299231350421906
+gc 0
+Train Epoch9 Acc 0.96205 (38482/40000), AUC 0.9907843470573425
+Test Epoch9 threshold 0.2 Acc 0.8935, AUC 0.9341174364089966, avg_entr 0.06512107700109482
+Test Epoch9 threshold 0.4 Acc 0.8947, AUC 0.933830976486206, avg_entr 0.09418083727359772
+Test Epoch9 threshold 0.6 Acc 0.8968, AUC 0.9382826089859009, avg_entr 0.12504345178604126
+Test Epoch9 threshold 0.8 Acc 0.8977, AUC 0.9446246027946472, avg_entr 0.1604463905096054
+gc 0
+Train Epoch10 Acc 0.9622 (38488/40000), AUC 0.990949273109436
+Test Epoch10 threshold 0.2 Acc 0.8933, AUC 0.9334549903869629, avg_entr 0.06473997235298157
+Test Epoch10 threshold 0.4 Acc 0.8948, AUC 0.9331248998641968, avg_entr 0.09439196437597275
+Test Epoch10 threshold 0.6 Acc 0.8973, AUC 0.9387009739875793, avg_entr 0.12544426321983337
+Test Epoch10 threshold 0.8 Acc 0.898, AUC 0.9446054697036743, avg_entr 0.1617579311132431
+gc 0
+Train Epoch11 Acc 0.96275 (38510/40000), AUC 0.9911306500434875
+Test Epoch11 threshold 0.2 Acc 0.8933, AUC 0.9336166381835938, avg_entr 0.06482405215501785
+Test Epoch11 threshold 0.4 Acc 0.8946, AUC 0.933364748954773, avg_entr 0.0942530408501625
+Test Epoch11 threshold 0.6 Acc 0.8973, AUC 0.9381271600723267, avg_entr 0.12471568584442139
+Test Epoch11 threshold 0.8 Acc 0.8979, AUC 0.9446861743927002, avg_entr 0.16029289364814758
+gc 0
+Train Epoch12 Acc 0.9625 (38500/40000), AUC 0.9909414052963257
+Test Epoch12 threshold 0.2 Acc 0.8931, AUC 0.9333834648132324, avg_entr 0.06445232778787613
+Test Epoch12 threshold 0.4 Acc 0.8946, AUC 0.9334851503372192, avg_entr 0.09399304538965225
+Test Epoch12 threshold 0.6 Acc 0.8971, AUC 0.9384769201278687, avg_entr 0.12538446485996246
+Test Epoch12 threshold 0.8 Acc 0.8984, AUC 0.9442770481109619, avg_entr 0.16122916340827942
+gc 0
+Train Epoch13 Acc 0.962425 (38497/40000), AUC 0.9909707903862
+Test Epoch13 threshold 0.2 Acc 0.893, AUC 0.9332830905914307, avg_entr 0.06439121067523956
+Test Epoch13 threshold 0.4 Acc 0.8945, AUC 0.9334417581558228, avg_entr 0.09388282150030136
+Test Epoch13 threshold 0.6 Acc 0.897, AUC 0.9383125305175781, avg_entr 0.12532320618629456
+Test Epoch13 threshold 0.8 Acc 0.8982, AUC 0.9443371295928955, avg_entr 0.16127827763557434
+gc 0
+Train Epoch14 Acc 0.962125 (38485/40000), AUC 0.9909976720809937
+Test Epoch14 threshold 0.2 Acc 0.8932, AUC 0.9332934617996216, avg_entr 0.06439592689275742
+Test Epoch14 threshold 0.4 Acc 0.8947, AUC 0.9333392381668091, avg_entr 0.0939939096570015
+Test Epoch14 threshold 0.6 Acc 0.897, AUC 0.9385201930999756, avg_entr 0.12537911534309387
+Test Epoch14 threshold 0.8 Acc 0.8984, AUC 0.9442851543426514, avg_entr 0.1610812246799469
+gc 0
+Train Epoch15 Acc 0.96215 (38486/40000), AUC 0.9909595251083374
+Test Epoch15 threshold 0.2 Acc 0.8932, AUC 0.9333097338676453, avg_entr 0.06439545005559921
+Test Epoch15 threshold 0.4 Acc 0.8947, AUC 0.9333599805831909, avg_entr 0.09382948279380798
+Test Epoch15 threshold 0.6 Acc 0.897, AUC 0.9384809732437134, avg_entr 0.1253807246685028
+Test Epoch15 threshold 0.8 Acc 0.8983, AUC 0.944410502910614, avg_entr 0.16110166907310486
+gc 0
+Train Epoch16 Acc 0.962225 (38489/40000), AUC 0.9908261299133301
+Test Epoch16 threshold 0.2 Acc 0.8932, AUC 0.9333131909370422, avg_entr 0.06438954174518585
+Test Epoch16 threshold 0.4 Acc 0.8947, AUC 0.9333624839782715, avg_entr 0.09381826967000961
+Test Epoch16 threshold 0.6 Acc 0.897, AUC 0.9384825229644775, avg_entr 0.12536562979221344
+Test Epoch16 threshold 0.8 Acc 0.8983, AUC 0.9444115161895752, avg_entr 0.16108351945877075
+gc 0
+Train Epoch17 Acc 0.962175 (38487/40000), AUC 0.9910714030265808
+Test Epoch17 threshold 0.2 Acc 0.8932, AUC 0.9333095550537109, avg_entr 0.0643848180770874
+Test Epoch17 threshold 0.4 Acc 0.8947, AUC 0.9333601593971252, avg_entr 0.09380978345870972
+Test Epoch17 threshold 0.6 Acc 0.897, AUC 0.9384805560112, avg_entr 0.1253548562526703
+Test Epoch17 threshold 0.8 Acc 0.8983, AUC 0.9444193243980408, avg_entr 0.1610897183418274
+gc 0
+Train Epoch18 Acc 0.9624 (38496/40000), AUC 0.9910959005355835
+Test Epoch18 threshold 0.2 Acc 0.8932, AUC 0.9332627058029175, avg_entr 0.06438249349594116
+Test Epoch18 threshold 0.4 Acc 0.8947, AUC 0.9333306550979614, avg_entr 0.09377895295619965
+Test Epoch18 threshold 0.6 Acc 0.897, AUC 0.9384589791297913, avg_entr 0.12531611323356628
+Test Epoch18 threshold 0.8 Acc 0.8983, AUC 0.9444175362586975, avg_entr 0.16108234226703644
+gc 0
+Train Epoch19 Acc 0.962325 (38493/40000), AUC 0.9909044504165649
+Test Epoch19 threshold 0.2 Acc 0.8932, AUC 0.933261513710022, avg_entr 0.06438194960355759
+Test Epoch19 threshold 0.4 Acc 0.8947, AUC 0.9333295822143555, avg_entr 0.0937761515378952
+Test Epoch19 threshold 0.6 Acc 0.897, AUC 0.9384586215019226, avg_entr 0.12531143426895142
+Test Epoch19 threshold 0.8 Acc 0.8983, AUC 0.9444169998168945, avg_entr 0.16107799112796783
+gc 0
+Train Epoch20 Acc 0.96215 (38486/40000), AUC 0.9910587072372437
+Test Epoch20 threshold 0.2 Acc 0.8932, AUC 0.9333064556121826, avg_entr 0.06437593698501587
+Test Epoch20 threshold 0.4 Acc 0.8947, AUC 0.9333562850952148, avg_entr 0.09380099922418594
+Test Epoch20 threshold 0.6 Acc 0.897, AUC 0.938477635383606, avg_entr 0.1253465712070465
+Test Epoch20 threshold 0.8 Acc 0.8983, AUC 0.9444171190261841, avg_entr 0.1610829085111618
+gc 0
+Train Epoch21 Acc 0.96295 (38518/40000), AUC 0.991044282913208
+Test Epoch21 threshold 0.2 Acc 0.8932, AUC 0.9332939386367798, avg_entr 0.06438928097486496
+Test Epoch21 threshold 0.4 Acc 0.8947, AUC 0.9333536624908447, avg_entr 0.09379769116640091
+Test Epoch21 threshold 0.6 Acc 0.897, AUC 0.9384678602218628, avg_entr 0.12533020973205566
+Test Epoch21 threshold 0.8 Acc 0.8983, AUC 0.944416344165802, avg_entr 0.1610802859067917
+gc 0
+Train Epoch22 Acc 0.962575 (38503/40000), AUC 0.9911189675331116
+Test Epoch22 threshold 0.2 Acc 0.8932, AUC 0.9332568049430847, avg_entr 0.0643763393163681
+Test Epoch22 threshold 0.4 Acc 0.8947, AUC 0.93332439661026, avg_entr 0.09376928955316544
+Test Epoch22 threshold 0.6 Acc 0.897, AUC 0.9384544491767883, avg_entr 0.12530411779880524
+Test Epoch22 threshold 0.8 Acc 0.8983, AUC 0.9444141387939453, avg_entr 0.16107232868671417
+gc 0
+Train Epoch23 Acc 0.962425 (38497/40000), AUC 0.9908789396286011
+Test Epoch23 threshold 0.2 Acc 0.8933, AUC 0.9332567453384399, avg_entr 0.06437354534864426
+Test Epoch23 threshold 0.4 Acc 0.8948, AUC 0.9333228468894958, avg_entr 0.09376639127731323
+Test Epoch23 threshold 0.6 Acc 0.8971, AUC 0.9384533166885376, avg_entr 0.12529921531677246
+Test Epoch23 threshold 0.8 Acc 0.8984, AUC 0.9444133043289185, avg_entr 0.16106769442558289
+gc 0
+Train Epoch24 Acc 0.962675 (38507/40000), AUC 0.9910881519317627
+Test Epoch24 threshold 0.2 Acc 0.8933, AUC 0.9332559704780579, avg_entr 0.06437178701162338
+Test Epoch24 threshold 0.4 Acc 0.8948, AUC 0.9333221912384033, avg_entr 0.09376499056816101
+Test Epoch24 threshold 0.6 Acc 0.8971, AUC 0.9384525418281555, avg_entr 0.12529829144477844
+Test Epoch24 threshold 0.8 Acc 0.8984, AUC 0.9444128274917603, avg_entr 0.16106727719306946
+gc 0
+Train Epoch25 Acc 0.9625 (38500/40000), AUC 0.9909466505050659
+Test Epoch25 threshold 0.2 Acc 0.8933, AUC 0.9332907199859619, avg_entr 0.0643858015537262
+Test Epoch25 threshold 0.4 Acc 0.8948, AUC 0.933442234992981, avg_entr 0.09382793307304382
+Test Epoch25 threshold 0.6 Acc 0.8971, AUC 0.9384543895721436, avg_entr 0.12526719272136688
+Test Epoch25 threshold 0.8 Acc 0.8984, AUC 0.9444128274917603, avg_entr 0.16106879711151123
+gc 0
+Train Epoch26 Acc 0.96255 (38502/40000), AUC 0.991155743598938
+Test Epoch26 threshold 0.2 Acc 0.8933, AUC 0.933291494846344, avg_entr 0.06438431143760681
+Test Epoch26 threshold 0.4 Acc 0.8948, AUC 0.9334425330162048, avg_entr 0.09382668137550354
+Test Epoch26 threshold 0.6 Acc 0.8971, AUC 0.9384506344795227, avg_entr 0.12528665363788605
+Test Epoch26 threshold 0.8 Acc 0.8984, AUC 0.9444127082824707, avg_entr 0.16106775403022766
+gc 0
+Train Epoch27 Acc 0.962375 (38495/40000), AUC 0.9911045432090759
+Test Epoch27 threshold 0.2 Acc 0.8933, AUC 0.9332892894744873, avg_entr 0.06437995284795761
+Test Epoch27 threshold 0.4 Acc 0.8948, AUC 0.9334410429000854, avg_entr 0.09382249414920807
+Test Epoch27 threshold 0.6 Acc 0.8971, AUC 0.9384492635726929, avg_entr 0.12528294324874878
+Test Epoch27 threshold 0.8 Acc 0.8984, AUC 0.9444117546081543, avg_entr 0.16106504201889038
+gc 0
+Train Epoch28 Acc 0.9626 (38504/40000), AUC 0.9909582138061523
+Test Epoch28 threshold 0.2 Acc 0.8933, AUC 0.9332503080368042, avg_entr 0.06436323374509811
+Test Epoch28 threshold 0.4 Acc 0.8948, AUC 0.933316707611084, avg_entr 0.09375303983688354
+Test Epoch28 threshold 0.6 Acc 0.8971, AUC 0.938448429107666, avg_entr 0.12528474628925323
+Test Epoch28 threshold 0.8 Acc 0.8984, AUC 0.9444097876548767, avg_entr 0.16105595231056213
+gc 0
+Train Epoch29 Acc 0.9624 (38496/40000), AUC 0.9911935329437256
+Test Epoch29 threshold 0.2 Acc 0.8933, AUC 0.9332855939865112, avg_entr 0.0643746554851532
+Test Epoch29 threshold 0.4 Acc 0.8948, AUC 0.9334372282028198, avg_entr 0.09381654113531113
+Test Epoch29 threshold 0.6 Acc 0.8971, AUC 0.9384463429450989, avg_entr 0.1252768337726593
+Test Epoch29 threshold 0.8 Acc 0.8984, AUC 0.9444096088409424, avg_entr 0.16105973720550537
+Best AUC 0.9518389701843262
+train_loss (2, 5, 30)
+valid_acc (30, 4)
+valid_AUC (30, 4)
+train_acc (30,)
+Figure(640x480)
+Figure(640x480)
+Figure(640x480)
+Figure(640x480)
+Figure(640x480)
+Start Testing
+Load ckpt at ckpt/imdb_transformeral_l5_pad600//imdb_transformeral_l5.pt
+[[4336  670]
+ [ 390 4604]]
+Figure(640x480)
+tensor([9.7935e-02, 9.4081e-02, 8.6619e-04,  ..., 1.0115e-02, 1.0487e-01,
+        5.4567e-06])
+[[4449  557]
+ [ 464 4530]]
+Figure(640x480)
+tensor([0.0079, 0.0754, 0.0028,  ..., 0.0020, 0.0062, 0.0079])
+[[4334  672]
+ [ 406 4588]]
+Figure(640x480)
+tensor([0.0052, 0.0079, 0.0044,  ..., 0.0045, 0.0039, 0.0042])
+[[4323  683]
+ [ 402 4592]]
+Figure(640x480)
+tensor([0.0054, 0.0071, 0.0054,  ..., 0.0049, 0.0049, 0.0050])
+[[4340  666]
+ [ 405 4589]]
+Figure(640x480)
+tensor([0.0048, 0.0065, 0.0045,  ..., 0.0043, 0.0041, 0.0045])

@@ -142,14 +142,14 @@ class ENC(nn.Module):
 
         self.cri = nn.MSELoss()
     
-    def forward(self, x, tgt, mask=None, h=None):
+    def forward(self, x, tgt, mask=None, hidden=None):
 
         if self.mode == 'emb' :
             enc_x = self.f(x.long())
         elif self.mode == 'linear' :
             enc_x = self.f(x)
         elif self.mode == 'lstm':
-            enc_x, h = self.f(x, h)
+            enc_x, hidden = self.f(x, hidden)
             #print(f"enc h {h[0].size()}") # 2x128x300
             #print(f"enc c {h[1].size()}")
         elif self.mode == 'trans':
@@ -158,11 +158,11 @@ class ENC(nn.Module):
             #enc_x = self.f(x, src_mask=mask)
             
             
-        red_x = self.reduction(enc_x, mask, h)
+        red_x = self.reduction(enc_x, mask, hidden)
         red_x = self.b(red_x)
         loss = self.cri(red_x, tgt)
 
-        return enc_x, loss, h, mask
+        return enc_x, loss, hidden, mask
 
     def reduction(self, x, mask=None, hidden=None):
 
@@ -530,8 +530,13 @@ class TransformerModelML(alModel):
         return y_out
              
     @torch.no_grad()
-    def inference_adapt(self, x, threshold=0.1):
-        
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        max_depth = self.num_layer if max_depth==None else max_depth
         entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
@@ -539,6 +544,7 @@ class TransformerModelML(alModel):
         mask = self.get_mask(x)
         x_out = x
         for idx in range(self.num_layer):
+            if idx >= max_depth: break
             # f forward
             x_out = self.layer_forward(x_out, idx, mask)
             # return form b/h
@@ -564,8 +570,7 @@ class TransformerModelML(alModel):
             mask = mask[remain_idx,:]
             
             #print("x_remain",x_out)
-            if x_out.size(0) == 0:
-                break
+            if x_out.size(0) == 0: break
     
         return pred, entr
     

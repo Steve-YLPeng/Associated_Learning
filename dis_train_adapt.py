@@ -11,6 +11,7 @@ from tqdm import tqdm
 import os
 import numpy
 import gc
+import time
 
 stop_words = set(stopwords.words('english'))
         
@@ -146,13 +147,13 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         #print("train_gc",gc.collect())
         print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
         
-def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1):
+def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
     y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
     for x, y in data_loader:
         x, y = x.cuda(), y.cuda()
-        pred, entr = model.inference_adapt(x, threshold=threshold)
+        pred, entr = model.inference_adapt(x, threshold=threshold, max_depth=max_depth)
         y_entr = torch.cat((y_entr, entr.cpu()), 0)            
         y_out = torch.cat((y_out, pred.cpu()), 0)
         y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
@@ -308,18 +309,22 @@ def main():
         layer_mask = {*range(args.num_layer)}
     
     print('Start Training')
-
+    print(f'train_mask {layer_mask}')
     if args.task == "text" or args.task == "classification":
         
         best_AUC = 0
         for epoch in range(args.epoch):
             print("gc",gc.collect())
+            ep_train_start_time = time.time()
+            
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask)
             valid_acc,valid_AUC,valid_entr = [],[],[]
+            print("ep%s_train_time %s"%(epoch ,time.time()-ep_train_start_time))
             
             with torch.no_grad():
-                for threshold in [.2,.4,.6,.8]:
-                    AUC, acc, entr = test_adapt(model, test_loader, threshold=threshold)
+                for threshold in [.1,.2,.3,.4,.5,.6,.7,.8,.9]:
+                    ep_test_start_time = time.time()
+                    AUC, acc, entr = test_adapt(model, test_loader, threshold=threshold, max_depth=args.train_mask)
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
                     valid_entr.append(entr)
@@ -327,7 +332,9 @@ def main():
                         for layer in range(model.num_layer):
                             model.schedulerStep(layer,AUC)
                     print(f'Test Epoch{epoch} threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                    if layer in layer_mask and AUC >= best_AUC:
+                    print("ep%s_t%s_test_time %s"%(epoch, threshold ,time.time()-ep_test_start_time))
+                    #if layer in layer_mask and AUC >= best_AUC:
+                    if AUC >= best_AUC:
                         best_AUC = AUC
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')

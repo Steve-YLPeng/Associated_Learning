@@ -295,7 +295,7 @@ def plotResult(model, save_filename, task):
         epoch_valid_acc = numpy.array(history["valid_acc"]).T
         for idx,acc in enumerate(epoch_valid_acc):
             #plt.plot(acc, label='valid acc L'+str(idx+1))
-            plt.plot(acc, label='valid acc t%.1f'%(0.2*(idx+1)))
+            plt.plot(acc, label='valid acc t%.1f'%(0.1*(idx+1)))
         plt.plot(history["train_acc"], "k", label='train_acc' )
         #plt.ylim(0.9, 1.0)
         plt.legend()
@@ -306,7 +306,7 @@ def plotResult(model, save_filename, task):
         epoch_valid_AUC = numpy.array(history["valid_AUC"]).T
         for idx,AUC in enumerate(epoch_valid_AUC):
             #plt.plot(AUC, label='valid AUC L'+str(idx+1))
-            plt.plot(AUC, label='valid AUC t%.1f'%(0.2*(idx+1)))
+            plt.plot(AUC, label='valid AUC t%.1f'%(0.1*(idx+1)))
         plt.plot(history["train_AUC"], "k", label='train_AUC' )
         #plt.ylim(0.9, 1.0)
         plt.legend()
@@ -317,7 +317,7 @@ def plotResult(model, save_filename, task):
         epoch_valid_entr = numpy.array(history["valid_entr"]).T
         for idx,entr in enumerate(epoch_valid_entr):
             #plt.plot(entr, label='valid entr L'+str(idx+1))
-            plt.plot(entr, label='valid entr t%.1f'%(0.2*(idx+1)))
+            plt.plot(entr, label='valid entr t%.1f'%(0.1*(idx+1)))
         #plt.plot(history["train_entr"], "k", label='train_entr' )
         #plt.ylim(0.9, 1.0)
         plt.legend()
