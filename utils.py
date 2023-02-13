@@ -194,7 +194,8 @@ def get_data(args):
     else:
         from datasets import load_dataset
         train_data = load_dataset(args.dataset, split='train')
-        test_data = load_dataset(args.dataset, split='test')
+        valid_data = load_dataset(args.dataset, split='test[:80%]')
+        test_data = load_dataset(args.dataset, split='test[80%:]')
 
         if args.dataset == 'dbpedia_14':
             tf = 'content'
@@ -217,24 +218,32 @@ def get_data(args):
         elif args.dataset == 'sst2':
             tf = 'sentence'
             class_num = 2
-            test_data = load_dataset(args.dataset, split='validation')
+            valid_data = load_dataset(args.dataset, split='validation[:50%]')
+            test_data = load_dataset(args.dataset, split='validation[50%:]')
 
         train_text = [b[tf] for b in train_data]
         test_text = [b[tf] for b in test_data]
+        valid_text = [b[tf] for b in valid_data]
+        
         train_label = [b['label'] for b in train_data]
         test_label = [b['label'] for b in test_data]
+        valid_label = [b['label'] for b in valid_data]
+        
         clean_train = [data_preprocessing(t, True) for t in train_text]
         clean_test = [data_preprocessing(t, True) for t in test_text]
+        clean_valid = [data_preprocessing(t, True) for t in valid_text]
 
         vocab = create_vocab(clean_train)
 
     if args.task == "text":
         trainset = Textset(clean_train, train_label, vocab, args.max_len)
         testset = Textset(clean_test, test_label, vocab, args.max_len)
+        validset = Textset(clean_valid, valid_label, vocab, args.max_len)
         train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
+        valid_loader = DataLoader(validset, batch_size=args.batch_size, collate_fn = validset.collate)
 
-        return train_loader, test_loader, class_num, vocab
+        return train_loader, valid_loader, test_loader, class_num, vocab
     
     elif args.task == "regression" :
         trainset = StructDataset(feature_train, train_target)
@@ -242,7 +251,7 @@ def get_data(args):
         train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
         
-        return train_loader, test_loader, target_num
+        return train_loader, valid_loader, test_loader, target_num
     
     elif args.task == "classification":
         trainset = StructDataset(feature_train, train_target)
@@ -250,7 +259,7 @@ def get_data(args):
         train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
         
-        return train_loader, test_loader, class_num
+        return train_loader, valid_loader, test_loader, class_num
 
 
 def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):

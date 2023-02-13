@@ -56,6 +56,7 @@ def get_args():
     parser.add_argument('--prefix-mask', type=bool, default=False)
     parser.add_argument('--side-dim', type=str, default=None)
     parser.add_argument('--same-emb', type=bool, default=False)
+    parser.add_argument('--threshold', type=float, default=None)
 
     args = parser.parse_args()
 
@@ -221,11 +222,11 @@ def predicting_for_sst(args, model, vocab):
     clean_test = [data_preprocessing(t, True) for t in test_text]
     
     testset = Textset(clean_test, test_label, vocab, args.max_len)
-    test_loader = DataLoader(testset, batch_size=1, collate_fn = testset.collate)
+    valid_loader = DataLoader(testset, batch_size=1, collate_fn = testset.collate)
 
     all_pred = []
     all_idx = []
-    for i, (x, y) in enumerate(test_loader):
+    for i, (x, y) in enumerate(valid_loader):
         x = x.cuda()
         pred = model.inference(x).argmax(1).squeeze(0)
         all_pred.append(pred.item())
@@ -259,7 +260,7 @@ def main():
         
     
     if args.task == "text":
-        train_loader, test_loader, class_num, vocab = get_data(args)
+        train_loader, valid_loader, test_loader, class_num, vocab = get_data(args)
         word_vec = get_word_vector(vocab, args.word_vec)
         
         if args.model == 'lstmal':
@@ -281,13 +282,13 @@ def main():
         
         
     elif args.task == "classification":
-        train_loader, test_loader, class_num  = get_data(args)
+        train_loader, valid_loader, test_loader, class_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         elif args.model == 'linearalside' :
             model = LinearALsideCLS(num_layer=args.num_layer, side_dim=args.side_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
     elif args.task == "regression":
-        train_loader, test_loader, target_num  = get_data(args)
+        train_loader, valid_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
 
@@ -322,9 +323,10 @@ def main():
             print("ep%s_train_time %s"%(epoch ,time.time()-ep_train_start_time))
             
             with torch.no_grad():
-                for threshold in [.1,.2,.3,.4,.5,.6,.7,.8,.9]:
+                test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] if args.threshold is None else [args.threshold]
+                for threshold in test_threshold:
                     ep_test_start_time = time.time()
-                    AUC, acc, entr = test_adapt(model, test_loader, threshold=threshold, max_depth=args.train_mask)
+                    AUC, acc, entr = test_adapt(model, valid_loader, threshold=threshold, max_depth=args.train_mask)
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
                     valid_entr.append(entr)
@@ -338,23 +340,7 @@ def main():
                         best_AUC = AUC
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
-            
-            
-            """
-            with torch.no_grad():
-                for layer in range(model.num_layer):
-                    AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
-                    valid_AUC.append(AUC)
-                    valid_acc.append(acc)
-                    valid_entr.append(entr)
-                    if args.lr_schedule != None:
-                        model.schedulerStep(layer,AUC)
-                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                    if layer in layer_mask and AUC >= best_AUC:
-                        best_AUC = AUC
-                        print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
-                        torch.save(model.state_dict(), f'{save_path}.pt')
-            """            
+             
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
             model.history["valid_entr"].append(valid_entr)
@@ -375,7 +361,7 @@ def main():
             
             with torch.no_grad():
                 for layer in range(model.num_layer):
-                    loss, r2 = test(model, test_loader, shortcut=layer+1, task="regression")
+                    loss, r2 = test(model, valid_loader, shortcut=layer+1, task="regression")
                     valid_out.append(loss)
                     valid_r2.append(r2)
                     print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
@@ -404,6 +390,27 @@ def main():
         print("Load ckpt at",f'{save_path}.pt')
         model.load_state_dict(torch.load(f'{save_path}.pt'))
         model.eval()
+        
+        
+        
+        with torch.no_grad():
+            if args.threshold is None:
+                test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+            else: 
+                test_threshold = [args.threshold]
+                
+            for threshold in test_threshold:
+                ep_test_start_time = time.time()
+                AUC, acc, entr = test_adapt(model, test_loader, threshold=threshold, max_depth=args.train_mask)
+
+                print(f'Test threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}')
+                print("t%s_test_time %s"%( threshold ,time.time()-ep_test_start_time))
+    """
+    print('Start Testing')
+    if args.task == "text" or args.task == "classification":
+        print("Load ckpt at",f'{save_path}.pt')
+        model.load_state_dict(torch.load(f'{save_path}.pt'))
+        model.eval()
         with torch.no_grad():
             for layer in range(model.num_layer):
                 y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
@@ -418,7 +425,7 @@ def main():
                     #gc.collect()
                 plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
                 print(y_entr)
-                
+    """            
         
     
 main()

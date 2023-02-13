@@ -11,6 +11,7 @@ from tqdm import tqdm
 import os
 import numpy
 import gc
+import time
 
 stop_words = set(stopwords.words('english'))
         
@@ -203,11 +204,11 @@ def predicting_for_sst(args, model, vocab):
     clean_test = [data_preprocessing(t, True) for t in test_text]
     
     testset = Textset(clean_test, test_label, vocab, args.max_len)
-    test_loader = DataLoader(testset, batch_size=1, collate_fn = testset.collate)
+    valid_loader = DataLoader(testset, batch_size=1, collate_fn = testset.collate)
 
     all_pred = []
     all_idx = []
-    for i, (x, y) in enumerate(test_loader):
+    for i, (x, y) in enumerate(valid_loader):
         x = x.cuda()
         pred = model.inference(x).argmax(1).squeeze(0)
         all_pred.append(pred.item())
@@ -241,7 +242,7 @@ def main():
         
     
     if args.task == "text":
-        train_loader, test_loader, class_num, vocab = get_data(args)
+        train_loader, valid_loader, test_loader, class_num, vocab = get_data(args)
         word_vec = get_word_vector(vocab, args.word_vec)
         
         if args.model == 'lstmal':
@@ -263,13 +264,13 @@ def main():
         
         
     elif args.task == "classification":
-        train_loader, test_loader, class_num  = get_data(args)
+        train_loader, valid_loader, test_loader, class_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALCLS(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
         elif args.model == 'linearalside' :
             model = LinearALsideCLS(num_layer=args.num_layer, side_dim=args.side_dim, class_num=class_num, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
     elif args.task == "regression":
-        train_loader, test_loader, target_num  = get_data(args)
+        train_loader, valid_loader, test_loader, target_num  = get_data(args)
         if args.model == 'linearal':
             model = LinearALRegress(num_layer=args.num_layer, feature_dim=args.feature_dim, class_num=1, l1_dim=args.l1_dim, lab_dim=args.label_emb, lr=args.lr)
 
@@ -291,23 +292,28 @@ def main():
         layer_mask = {*range(args.num_layer)}
     
     print('Start Training')
-
+    
     if args.task == "text" or args.task == "classification":
         
         best_AUC = 0
         for epoch in range(args.epoch):
             print("gc",gc.collect())
+            ep_train_start_time = time.time()
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask)
+            print("ep%s_train_time %s"%(epoch ,time.time()-ep_train_start_time))
+            
             valid_acc,valid_AUC,valid_entr = [],[],[]
             with torch.no_grad():
                 for layer in range(model.num_layer):
-                    AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
+                    ep_test_start_time = time.time()
+                    AUC, acc, entr = test(model, valid_loader, shortcut=layer+1, task=args.task)
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
                     valid_entr.append(entr)
                     if args.lr_schedule != None:
                         model.schedulerStep(layer,AUC)
                     print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
+                    print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-ep_test_start_time))
                     if layer in layer_mask and AUC >= best_AUC:
                         best_AUC = AUC
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
@@ -332,7 +338,7 @@ def main():
             
             with torch.no_grad():
                 for layer in range(model.num_layer):
-                    loss, r2 = test(model, test_loader, shortcut=layer+1, task="regression")
+                    loss, r2 = test(model, valid_loader, shortcut=layer+1, task="regression")
                     valid_out.append(loss)
                     valid_r2.append(r2)
                     print(f'Test Epoch{epoch} layer{layer} out_loss {loss}, R2 {r2}')
@@ -363,7 +369,16 @@ def main():
         model.eval()
         with torch.no_grad():
             for layer in range(model.num_layer):
+                ep_test_start_time = time.time()
+                AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
+                print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
+                print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-ep_test_start_time))
+                
+                
+                """
+                ep_test_start_time = time.time()
                 y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
+                cor,num = 0,0
                 for x, y in test_loader:
                     x, y = x.cuda(), y.cuda()
                     pred = model.inference(x, layer+1)
@@ -373,8 +388,17 @@ def main():
                     y_out = torch.cat((y_out, pred.argmax(-1).view(-1).cpu().int()), 0).int()
                     y_tar = torch.cat((y_tar, y.view(-1).cpu().int()), 0).int()
                     #gc.collect()
-                plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
+                    cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
+                    num += x.size(0)
+
+                test_entr = torch.mean(y_entr).item()
+                test_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
+                test_acc = cor/num
+                print(f'Test l{layer} Acc {test_acc}, AUC {test_AUC}, avg_entr {test_entr}')
+                print("l%s_test_time %s"%( layer ,time.time()-ep_test_start_time))
                 print(y_entr)
+                plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
+                """
                 
         
     

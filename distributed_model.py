@@ -507,7 +507,7 @@ class TransformerModelML(alModel):
         pad_mask = ~(x == 0)
         return pad_mask.cuda()
     
-    ### 
+    ### func for inference_adapt
     def layer_forward(self, x, idx, mask):
         if idx==0: # embed
             x_out = self.layers[idx].enc.f(x.long())          
@@ -644,6 +644,76 @@ class LSTMModelML(alModel):
                 
         return layer_loss
     
+    ### func for inference_adapt
+    def layer_forward(self, x, idx, hidden):
+        if idx==0: # embed
+            x_out = self.layers[idx].enc.f(x.long())
+            return x_out, None  
+        elif idx==1: # 1st lstm forward
+            x_out, (h, c) = self.layers[idx].enc.f(x)
+            x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
+            return x_out, (h, c)
+        else: # lstm forward
+            x_out, (h, c) = self.layers[idx].enc.f(x, hidden)
+            x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
+            return x_out, (h, c)
+    
+    def bridge_return(self, x, len_path, hidden):
+        #
+        x_out = x
+        if len_path == 0:
+            x_out = x_out.mean(1)  
+        else:
+            (h, c) = hidden
+            x_out = torch.sum(h, dim=0)
+            
+        y_out = self.layers[len_path].enc.b(x_out)
+        
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)
+        
+        return y_out
+             
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        max_depth = self.num_layer if max_depth==None else max_depth
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        x_out = x
+        hidden = None
+        for idx in range(self.num_layer):
+            if idx >= max_depth: break
+            # f forward
+            x_out, hidden = self.layer_forward(x_out, idx, hidden)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx, hidden)
+
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+
+            total_remain_idx = entr>threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+
+            remain_idx = y_entr>threshold
+
+            x_out = x_out[remain_idx,:]
+            if idx != 0:
+                (h, c) = hidden
+                h = h[:,remain_idx,:]
+                c = c[:,remain_idx,:]
+                hidden = (h, c)
+            if x_out.size(0) == 0: break
+    
+        return pred, entr
+    
     @torch.no_grad()
     def inference(self, x, len_path=None):
         
@@ -657,7 +727,6 @@ class LSTMModelML(alModel):
             if idx==0:
                 x_out = self.layers[idx].enc.f(x.long())
                   
-                
             elif idx==1:
                 x_out, (h, c) = self.layers[idx].enc.f(x_out)
                 x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
@@ -713,6 +782,57 @@ class LinearModelML(alModel):
                 layer_loss.append([ae_out.item(), as_out.item()])
                 
         return layer_loss
+    
+    ### func for inference_adapt
+    def layer_forward(self, x, idx):
+        if idx==0: # embed
+            x_out = self.layers[idx].enc.f(x.long())
+            x_out = x_out.mean(1)
+        else: # lstm forward
+            x_out = self.layers[idx].enc.f(x) 
+        return x_out
+    
+    def bridge_return(self, x, len_path):
+        x_out = x 
+        y_out = self.layers[len_path].enc.b(x_out)
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)
+        return y_out
+    
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        max_depth = self.num_layer if max_depth==None else max_depth
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        x_out = x
+        for idx in range(self.num_layer):
+            if idx >= max_depth: break
+            # f forward
+            x_out = self.layer_forward(x_out, idx)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx)
+
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+
+            total_remain_idx = entr>threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+
+            remain_idx = y_entr>threshold
+
+            x_out = x_out[remain_idx,:]
+
+            if x_out.size(0) == 0: break
+    
+        return pred, entr
     
     @torch.no_grad()
     def inference(self, x, len_path=None):
