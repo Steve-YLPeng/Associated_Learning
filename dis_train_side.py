@@ -53,9 +53,9 @@ def get_args():
     parser.add_argument('--feature-dim', type=int, default=0)
     parser.add_argument('--lr-schedule', type=str, default=None)
     parser.add_argument('--train-mask', type=int, default=None)
-    parser.add_argument('--prefix-mask', type=bool, default=False)
+    parser.add_argument('--prefix-mask', action='store_true')
     parser.add_argument('--side-dim', type=str, default=None)
-    parser.add_argument('--same-emb', type=bool, default=False)
+    parser.add_argument('--same-emb', action='store_true')
 
     args = parser.parse_args()
 
@@ -219,7 +219,7 @@ def predicting_for_sst(args, model, vocab):
     output.to_csv('SST-2.tsv', sep='\t', index=False)
 
 def main():
-    gc.enable()
+    init_start_time = time.time()
     args = get_args()
     if args.side_dim is not None:
         args.side_dim = [int(dim) for dim in args.side_dim.split("-")]
@@ -290,8 +290,10 @@ def main():
             layer_mask = {args.train_mask-1}
     else:
         layer_mask = {*range(args.num_layer)}
-    
+        
+    print("init_time %s"%(time.time()-init_start_time))
     print('Start Training')
+    total_train_time = time.time()
     
     if args.task == "text" or args.task == "classification":
         
@@ -361,7 +363,8 @@ def main():
     if args.dataset == 'sst2':
         model.load_state_dict(torch.load(f'{save_path}.pt'))
         predicting_for_sst(args, model, vocab)
-
+        
+    print("total_train+valid_time %s"%(time.time()-total_train_time))
     print('Start Testing')
     if args.task == "text" or args.task == "classification":
         print("Load ckpt at",f'{save_path}.pt')
@@ -369,10 +372,10 @@ def main():
         model.eval()
         with torch.no_grad():
             for layer in range(model.num_layer):
-                ep_test_start_time = time.time()
+                test_start_time = time.time()
                 AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
                 print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-ep_test_start_time))
+                print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-test_start_time))
                 
                 
                 """

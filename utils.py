@@ -38,7 +38,9 @@ def get_data(args):
             else:
                 label.append(0)
         vocab = create_vocab(corpus)
-        clean_train, clean_test, train_label, test_label = train_test_split(text, label, test_size=0.2)
+        
+        clean_train, clean_test, train_label, test_label = train_test_split(text, label, test_size=0.2, random_state=35)
+        clean_valid, clean_test, valid_label, test_label = train_test_split(clean_test, test_label, test_size=0.5, random_state=35)
     
     elif args.dataset ==  "ca_housing":
 
@@ -194,8 +196,9 @@ def get_data(args):
     else:
         from datasets import load_dataset
         train_data = load_dataset(args.dataset, split='train')
-        valid_data = load_dataset(args.dataset, split='test[:80%]')
-        test_data = load_dataset(args.dataset, split='test[80%:]')
+        #valid_data = load_dataset(args.dataset, split='test[:50%]')
+        #test_data = load_dataset(args.dataset, split='test[50%:]')
+        test_data = load_dataset(args.dataset, split='test').shuffle(seed=35)
 
         if args.dataset == 'dbpedia_14':
             tf = 'content'
@@ -218,9 +221,13 @@ def get_data(args):
         elif args.dataset == 'sst2':
             tf = 'sentence'
             class_num = 2
-            valid_data = load_dataset(args.dataset, split='validation[:50%]')
-            test_data = load_dataset(args.dataset, split='validation[50%:]')
-
+            test_data = load_dataset(args.dataset, split='validation').shuffle(seed=35)
+            
+        # shuffle and split testset to 50/50
+        split_size = int(test_data.num_rows*0.5)
+        valid_data = test_data[:split_size]
+        test_data = test_data[split_size:]
+        
         train_text = [b[tf] for b in train_data]
         test_text = [b[tf] for b in test_data]
         valid_text = [b[tf] for b in valid_data]
