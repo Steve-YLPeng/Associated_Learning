@@ -374,8 +374,8 @@ def main():
             for layer in range(model.num_layer):
                 test_start_time = time.time()
                 AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
-                print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-test_start_time))
+                print(f'Test layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
+                print("l%s_test_time %s"%(layer ,time.time()-test_start_time))
                 
                 
                 """

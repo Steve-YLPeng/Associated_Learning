@@ -229,12 +229,16 @@ def get_data(args):
         test_data = test_data[split_size:]
         
         train_text = [b[tf] for b in train_data]
-        test_text = [b[tf] for b in test_data]
-        valid_text = [b[tf] for b in valid_data]
+        #test_text = [b[tf] for b in test_data]
+        #valid_text = [b[tf] for b in valid_data]
+        test_text = test_data[tf]
+        valid_text = valid_data[tf]
         
         train_label = [b['label'] for b in train_data]
-        test_label = [b['label'] for b in test_data]
-        valid_label = [b['label'] for b in valid_data]
+        #test_label = [b['label'] for b in test_data]
+        #valid_label = [b['label'] for b in valid_data]
+        test_label = test_data['label']
+        valid_label = valid_data['label']
         
         clean_train = [data_preprocessing(t, True) for t in train_text]
         clean_test = [data_preprocessing(t, True) for t in test_text]
@@ -250,6 +254,7 @@ def get_data(args):
         test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
         valid_loader = DataLoader(validset, batch_size=args.batch_size, collate_fn = validset.collate)
 
+        print(f"train size {len(trainset)}, valid size {len(validset)}, test size {len(testset)}")
         return train_loader, valid_loader, test_loader, class_num, vocab
     
     elif args.task == "regression" :
