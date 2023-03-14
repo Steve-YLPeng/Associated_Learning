@@ -3,7 +3,7 @@ from nltk.corpus import stopwords
 import torch
 from torch.utils.data import DataLoader
 from torch.nn.functional import mse_loss
-from torchmetrics.functional import r2_score, auroc
+from torchmetrics.functional import r2_score, auroc, f1_score
 from utils import *
 # from model import Model
 from distributed_model import *
@@ -169,11 +169,12 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
         #print(y_entr)
         valid_entr = torch.mean(y_entr).item()
         valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
+        valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
         valid_acc = cor/num
         #del y_out
         #del y_tar
         #print("test_gc",gc.collect())
-        return valid_AUC, valid_acc, valid_entr
+        return valid_AUC, valid_f1, valid_acc, valid_entr
     
     elif task == "regression":
         model.eval()
@@ -219,7 +220,7 @@ def predicting_for_sst(args, model, vocab):
     output.to_csv('SST-2.tsv', sep='\t', index=False)
 
 def main():
-    init_start_time = time.time()
+    init_start_time = time.process_time()
     args = get_args()
     if args.side_dim is not None:
         args.side_dim = [int(dim) for dim in args.side_dim.split("-")]
@@ -290,34 +291,41 @@ def main():
             layer_mask = {args.train_mask-1}
     else:
         layer_mask = {*range(args.num_layer)}
-        
-    print("init_time %s"%(time.time()-init_start_time))
+    torch.cuda.synchronize()    
+    print("init_time %s"%(time.process_time()-init_start_time))
     print('Start Training')
-    total_train_time = time.time()
+    total_train_time = time.process_time()
     
     if args.task == "text" or args.task == "classification":
         
         best_AUC = 0
+        best_para = -1
+        best_epoch = -1
         for epoch in range(args.epoch):
             print("gc",gc.collect())
-            ep_train_start_time = time.time()
+            ep_train_start_time = time.process_time()
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask)
-            print("ep%s_train_time %s"%(epoch ,time.time()-ep_train_start_time))
+            torch.cuda.synchronize()
+            print("ep%s_train_time %s"%(epoch ,time.process_time()-ep_train_start_time))
             
             valid_acc,valid_AUC,valid_entr = [],[],[]
             with torch.no_grad():
                 for layer in range(model.num_layer):
-                    ep_test_start_time = time.time()
-                    AUC, acc, entr = test(model, valid_loader, shortcut=layer+1, task=args.task)
+                    ep_test_start_time = time.process_time()
+                    AUC, f1, acc, entr = test(model, valid_loader, shortcut=layer+1, task=args.task)
+                    criteria = f1
                     valid_AUC.append(AUC)
                     valid_acc.append(acc)
                     valid_entr.append(entr)
                     if args.lr_schedule != None:
                         model.schedulerStep(layer,AUC)
-                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                    print("ep%s_l%s_test_time %s"%(epoch, layer ,time.time()-ep_test_start_time))
-                    if layer in layer_mask and AUC >= best_AUC:
-                        best_AUC = AUC
+                    torch.cuda.synchronize()
+                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                    print("ep%s_l%s_test_time %s"%(epoch, layer ,time.process_time()-ep_test_start_time))
+                    if layer in layer_mask and criteria >= best_AUC:
+                        best_AUC = criteria
+                        best_para = layer
+                        best_epoch = epoch
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
             model.history["valid_acc"].append(valid_acc)
@@ -325,7 +333,7 @@ def main():
             model.history["valid_entr"].append(valid_entr)
             
             
-        print('Best AUC', best_AUC)
+        print('Best AUC', best_AUC, best_epoch, best_para)
         print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
         print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
         print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
@@ -358,28 +366,30 @@ def main():
 
         print(f'Best r2 {best_r2} at L{best_layer}' )
             
-    plotResult(model, out_path, args.task)
+    #plotResult(model, out_path, args.task)
     
     if args.dataset == 'sst2':
         model.load_state_dict(torch.load(f'{save_path}.pt'))
         predicting_for_sst(args, model, vocab)
-        
-    print("total_train+valid_time %s"%(time.time()-total_train_time))
+    torch.cuda.synchronize()    
+    print("total_train+valid_time %s"%(time.process_time()-total_train_time))
     print('Start Testing')
     if args.task == "text" or args.task == "classification":
         print("Load ckpt at",f'{save_path}.pt')
         model.load_state_dict(torch.load(f'{save_path}.pt'))
         model.eval()
+        
         with torch.no_grad():
             for layer in range(model.num_layer):
-                test_start_time = time.time()
-                AUC, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
-                print(f'Test layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}')
-                print("l%s_test_time %s"%(layer ,time.time()-test_start_time))
+                test_start_time = time.process_time()
+                AUC, f1, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
+                torch.cuda.synchronize()
+                print(f'Test layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                print("l%s_test_time %s"%(layer ,time.process_time()-test_start_time))
                 
                 
                 """
-                ep_test_start_time = time.time()
+                ep_test_start_time = time.process_time()
                 y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
                 cor,num = 0,0
                 for x, y in test_loader:
@@ -397,8 +407,9 @@ def main():
                 test_entr = torch.mean(y_entr).item()
                 test_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
                 test_acc = cor/num
+                torch.cuda.synchronize()
                 print(f'Test l{layer} Acc {test_acc}, AUC {test_AUC}, avg_entr {test_entr}')
-                print("l%s_test_time %s"%( layer ,time.time()-ep_test_start_time))
+                print("l%s_test_time %s"%( layer ,time.process_time()-ep_test_start_time))
                 print(y_entr)
                 plotConfusionMatrix(y_out, y_tar, [str(i) for i in range(model.class_num)], f"{out_path}_test_l{layer}")
                 """
