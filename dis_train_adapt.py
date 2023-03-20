@@ -166,6 +166,8 @@ def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=N
     valid_acc = cor/num    
     return valid_AUC, valid_f1, valid_acc, valid_entr
     #return valid_AUC, valid_acc, valid_entr
+
+
 """      
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
     if task == "text" or task == "classification":

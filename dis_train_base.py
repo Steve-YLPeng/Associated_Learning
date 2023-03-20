@@ -147,6 +147,25 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         #print("train_gc",gc.collect())
         print(f'Train Epoch{epoch} out_loss {train_out}, R2 {train_r2}')
 
+def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
+    model.eval()
+    cor, num = 0, 0
+    y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
+    for x, y in data_loader:
+        x, y = x.cuda(), y.cuda()
+        pred, entr = model.inference_adapt(x, threshold=threshold, max_depth=max_depth)
+        y_entr = torch.cat((y_entr, entr.cpu()), 0)            
+        y_out = torch.cat((y_out, pred.cpu()), 0)
+        y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
+        cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
+        num += x.size(0)
+    valid_entr = torch.mean(y_entr).item()
+    valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
+    valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
+    valid_acc = cor/num    
+    return valid_AUC, valid_f1, valid_acc, valid_entr
+    #return valid_AUC, valid_acc, valid_entr
+
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
     if task == "text" or task == "classification":
         model.eval()
@@ -379,14 +398,24 @@ def main():
         model.load_state_dict(torch.load(f'{save_path}.pt'))
         model.eval()
         with torch.no_grad():
+            ### shortcut testing
             for layer in range(model.num_layer):
             #for layer in [model.num_layer-1]:
-                
+                print("gc",gc.collect())
                 test_start_time = time.process_time()
                 AUC, f1, acc, entr = test(model, test_loader, shortcut=layer+1, task=args.task)
                 torch.cuda.synchronize()
                 print(f'Test layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
                 print("l%s_test_time %s"%(layer ,time.process_time()-test_start_time))
-                
-                
+            
+            ### adaptive testing    
+            test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+            for threshold in test_threshold:
+                print("gc",gc.collect())
+                test_start_time = time.process_time()
+                AUC,f1, acc, entr = test_adapt(model, test_loader, threshold=threshold, max_depth=args.train_mask)
+                torch.cuda.synchronize()
+                print(f'Test threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
+        
 main()
