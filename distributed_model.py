@@ -186,7 +186,6 @@ class ENC(nn.Module):
         
         
 ### AL layers definition
-
 class EMBLayer(nn.Module):
     def __init__(self, inp_dim, lab_dim, hid_dim, lr, class_num=None, word_vec=None, ae_cri='ce'):
         super().__init__()
@@ -336,10 +335,9 @@ class LinearLayer(nn.Module):
 
 
 ###########################################################
-# Definition of AL text classification models. 
+# Definition of old version AL models for text classification. 
 # models:   
 #   TransModel, LSTMModel, 
-#   TransformerModelML, LSTMModelML, LinearModelMLdeta
 ###########################################################
 class TransModel(nn.Module):
     def __init__(self, vocab_size, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
@@ -423,8 +421,13 @@ class LSTMModel(nn.Module):
 
         return pred
        
-### YLP: multi-layer version of al
-
+       
+###########################################################
+# Definition of AL multi-layer models. 
+# models: 
+#   alModel(template), 
+#   TransformerModelML, LSTMModelML, LinearModelML
+###########################################################
 class alModel(nn.Module):
     def __init__(self, num_layer, l1_dim, class_num, lab_dim, emb_dim=None):
         super().__init__()
@@ -549,27 +552,17 @@ class TransformerModelML(alModel):
             x_out = self.layer_forward(x_out, idx, mask)
             # return form b/h
             y_out = self.bridge_return(x_out, idx, mask)
-            #y_out = torch.rand(x_out.size())
 
             y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
 
             total_remain_idx = entr>threshold
-            #print("total",total_remain_idx)
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-            #print("entr",entr.size())
-            #print("pred",pred.size())
             remain_idx = y_entr>threshold
-            #print(f"\n{idx}")
             
-            #print("remain",remain_idx)
-            
-            #print("x",x_out)
             x_out = x_out[remain_idx,:]
             mask = mask[remain_idx,:]
-            
-            #print("x_remain",x_out)
             if x_out.size(0) == 0: break
     
         return pred, entr
@@ -604,7 +597,6 @@ class TransformerModelML(alModel):
             y_out = self.layers[idx].ae.h(y_out)
             
         return y_out
-    
     
 class LSTMModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
@@ -748,7 +740,6 @@ class LSTMModelML(alModel):
             
         return y_out
 
-
 class LinearModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
@@ -766,7 +757,6 @@ class LinearModelML(alModel):
         self.layers = layers     
         
     def forward(self, x, y):
-        
         layer_loss = []
         y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
         
@@ -776,11 +766,9 @@ class LinearModelML(alModel):
                 x_out, y_out, ae_out, as_out, _ = layer(x, y)
                 x_out = x_out.mean(1)
                 layer_loss.append([ae_out.item(), as_out.item()])
-                
             else:
                 x_out, y_out, ae_out, as_out = layer(x_out, y_out)
                 layer_loss.append([ae_out.item(), as_out.item()])
-                
         return layer_loss
     
     ### func for inference_adapt
@@ -806,7 +794,9 @@ class LinearModelML(alModel):
         # Samples with (entropy > threshold) will go to next layer
         # max_depth: the max depth of layer a sample will go throught
         #######################################################
-        max_depth = self.num_layer if max_depth==None else max_depth
+        if max_depth==None:
+           max_depth = self.num_layer 
+        assert 1 <= max_depth and max_depth <= self.num_layer
         entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
@@ -862,7 +852,7 @@ class LinearModelML(alModel):
 ###########################################################
 # Definition of AL regression models. 
 # models: 
-#   LinearALReg, 
+#   LinearALRegress, LinearALCLS, LinearALsideCLS
 ###########################################################
 
 class LinearALRegress(alModel): 
@@ -1045,7 +1035,13 @@ class LinearALsideCLS(alModel):
             
         return y_out
 
-### AL sideinput model template for text cls task
+
+###########################################################
+# Definition of AL sideinput model for text cls task. 
+# models: 
+#   alSideModel,
+#   LinearALsideText, TransformerALsideText, LSTMALsideText
+###########################################################
 class alSideModel(alModel): 
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
@@ -1058,111 +1054,11 @@ class alSideModel(alModel):
     def sidedata(self, x):
         #return x
         return torch.split(x, self.side_dim, -1)
-    
-class LinearALsideText(alSideModel): 
-    def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
-        super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
-        
-        # emb
-        if self.same_emb:
-            if word_vec is not None:
-                self.emb = nn.Embedding.from_pretrained(word_vec, freeze=False)
-            else:
-                self.emb = nn.Embedding(vocab_size, emb_dim) 
-        else:
-            emb_layers = ModuleList([])
-            for idx in range(self.num_layer):
-                if word_vec is not None:
-                    emb = nn.Embedding.from_pretrained(word_vec, freeze=False)
-                else:
-                    emb = nn.Embedding(vocab_size, emb_dim) 
-                emb_layers.append(emb)
-            self.emb_layers = emb_layers
-          
-        # layers define  
-        layers = ModuleList([])
-        for idx in range(self.num_layer):
-            if idx == 0:
-                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, out_dim = class_num, 
-                                    ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
-            else:
-                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, 
-                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
-            layers.append(layer)
-        self.layers = layers  
-    
-    
-        
-    def forward(self, x, y):
-        
-        layer_loss = []
-        y = nn.functional.one_hot(y, self.class_num).float().to(y.device)
-        
-        x_side = self.sidedata(x)
-        
-        # forward function also update
-        for idx,layer in enumerate(self.layers):
-            
-            # F Input shape [batch * seq_len * emb_dim] pool to [batch * 1 * emb_dim]
-            # F Output shape [batch * emb_dim] == [batch * l1_dim]
-            
-            if self.same_emb:
-                emb_side = self.emb(x_side[idx])
-            else:
-                emb_side = self.emb_layers[idx](x_side[idx])
-                
-            emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
-            if idx == 0:             
-                x_out, y_out, ae_out, as_out = layer(emb_side_pool.view(-1,self.emb_dim), y)
-                layer_loss.append([ae_out.item(), as_out.item()])
-            else:
-                x_out = x_out.view(-1,1,self.emb_dim)
-                x_cat = torch.cat((x_out, emb_side_pool), dim=1)
-                x_cat = nn.functional.adaptive_max_pool2d(x_cat,(1,self.emb_dim))
-                x_out, y_out, ae_out, as_out = layer(x_cat.view(-1,self.emb_dim), y_out)
-                
-                layer_loss.append([ae_out.item(), as_out.item()])
-        return layer_loss
-    
-    @torch.no_grad()
-    def inference(self, x, len_path=None):
-        # full path inference by default
-        if len_path == None:
-            len_path = self.num_layer
-            
-        assert 1 <= len_path and len_path <= self.num_layer
-        
-        x_side = self.sidedata(x)
-  
-        for idx in range(len_path):
-            if self.same_emb:
-                emb_side = self.emb(x_side[idx])
-            else:
-                emb_side = self.emb_layers[idx](x_side[idx])
-            emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
-            
-            if idx == 0:              
-                x_out = self.layers[idx].enc.f(emb_side_pool.view(-1,self.emb_dim))        
-                
-            else:
-                x_out = x_out.view(-1,1,self.emb_dim)
-                x_cat = torch.cat((x_out, emb_side_pool), dim=1)
-                x_cat = nn.functional.adaptive_max_pool2d(x_cat,(1,self.emb_dim))
-                x_out = self.layers[idx].enc.f(x_cat.view(-1,self.emb_dim))                        
-                     
-        # bridge                    
-        y_out = self.layers[len_path-1].enc.b(x_out)
-        
-        for idx in reversed(range(len_path)):
-            y_out = self.layers[idx].ae.h(y_out)
-        #print(self.layers[0].ae.h)    
-        return y_out
-    
+       
 class TransformerALsideText(alSideModel):    
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
         super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
 
-        
         # emb define
         if self.same_emb:
             if word_vec is not None:
@@ -1184,10 +1080,10 @@ class TransformerALsideText(alSideModel):
         for idx in range(self.num_layer):                
             if idx == 0:
                 layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr, out_dim = class_num,
-                                    ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
+                                    ae_cri="ce",ae_act=[nn.Tanh(), nn.Sigmoid()])
             else:
                 layer = TransLayer(emb_dim, lab_dim, l1_dim, lr=lr, 
-                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
+                                    ae_cri="mse",ae_act=[nn.Tanh(), None])
             
             layers.append(layer)
         
@@ -1199,7 +1095,6 @@ class TransformerALsideText(alSideModel):
         mask = self.get_mask(x)
         y = nn.functional.one_hot(y, self.class_num).float().to(y.device)
         
-        #print(f"x{x.shape}")
         x_side = self.sidedata(x)
         mask_split = self.sidedata(mask)
         
@@ -1217,11 +1112,8 @@ class TransformerALsideText(alSideModel):
                 x_out, y_out, ae_out, as_out, mask_cat = layer(emb_side, y, mask_cat)
                 layer_loss.append([ae_out.item(), as_out.item()])
             else:
-                print(f"idx{idx}",x_out.size())
                 x_cat = torch.cat((x_out, emb_side), dim=1)
-                print(f"idx{idx} cat",x_cat.size())
                 mask_cat = torch.cat((mask_cat, mask_side), dim=1)
-                print(f"idx{idx} mask",mask_cat.size())
                 
                 x_out, y_out, ae_out, as_out, mask_cat = layer(x_cat, y_out, mask_cat)
                 layer_loss.append([ae_out.item(), as_out.item()])
@@ -1231,6 +1123,74 @@ class TransformerALsideText(alSideModel):
         pad_mask = ~(x == 0)
         return pad_mask.cuda()
     
+    def layer_forward(self, x, idx):
+        pass
+            
+    def bridge_return(self, x, len_path):
+        pass
+    
+    @torch.no_grad()    
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        mask = self.get_mask(x)
+        
+        for idx in range(self.num_layer):
+            x_side = self.sidedata(x)
+            mask_split = self.sidedata(mask)
+            
+            # f forward
+            if self.same_emb:
+                emb_side = self.emb(x_side[idx])
+                mask_side = mask_split[idx]
+            else:
+                emb_side = self.emb_layers[idx](x_side[idx])
+                mask_side = mask_split[idx]
+            
+            if idx == 0:
+                mask_cat = mask_side
+                x_out = self.layers[idx].enc.f(emb_side, mask_cat)        
+            else:
+                x_cat = torch.cat((x_out, emb_side), dim=1)
+                mask_cat = torch.cat((mask_cat, mask_side), dim=1)
+                x_out = self.layers[idx].enc.f(x_cat, mask_cat)
+        
+            # return form b/h
+            denom = torch.sum(mask_cat, -1, keepdim=True)
+            b_out = torch.sum(x_out * mask_cat.unsqueeze(-1), dim=1) / denom 
+            y_out = self.layers[idx].enc.b(b_out)
+            
+            for idx_r in reversed(range(idx+1)):
+                y_out = self.layers[idx_r].ae.h(y_out)
+            
+            # filter
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            remain_idx = y_entr>threshold
+            total_remain_idx = entr>threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            
+            if sum(remain_idx) == 0: break
+            if idx+1 >= max_depth: break
+            
+            mask_cat = mask_cat[remain_idx,:]
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            mask = mask[remain_idx,:]
+        return pred, entr
+            
     @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
@@ -1242,8 +1202,6 @@ class TransformerALsideText(alSideModel):
         mask = self.get_mask(x)
         x_side = self.sidedata(x)
         mask_split = self.sidedata(mask)
-        
-        
         
         for idx in range(len_path):
             if self.same_emb:
@@ -1278,7 +1236,6 @@ class LSTMALsideText(alSideModel):
         super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
         
         self.bidirectional = False
-        
         
         # emb 
         if self.same_emb:
@@ -1329,26 +1286,85 @@ class LSTMALsideText(alSideModel):
             # emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
             if idx == 0:             
                 x_out, y_out, ae_out, as_out, [h, _] = layer(emb_side, y)
-                #print("idx0",x_out.size())
-                #x_out = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=-1)
-                #print("idx0 cat",x_out.size())
+
                 layer_loss.append([ae_out.item(), as_out.item()])
             else:
-                #print(f"idx{idx}",x_out.size())
                 if self.bidirectional:
                     x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
                 else:
                     x_cat = x_out
-                #print(f"idx{idx} cat",x_cat.size())
-                #print(f"idx{idx} emb",emb_side.size())
+
                 x_cat = torch.cat((x_cat, emb_side), dim=1)
-                #print(f"idx{idx} cat",x_cat.size())
                 x_out, y_out, ae_out, as_out, [h, _] = layer(x_cat, y_out, h)
 
                 layer_loss.append([ae_out.item(), as_out.item()])
                 
         return layer_loss
     
+    def layer_forward(self, x, idx):
+        pass
+            
+    def bridge_return(self, x, len_path):
+        pass
+    
+    @torch.no_grad()    
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        for idx in range(self.num_layer):
+            x_side = self.sidedata(x)
+            
+            # f forward
+            if self.same_emb:
+                emb_side = self.emb(x_side[idx])
+            else:
+                emb_side = self.emb_layers[idx](x_side[idx])
+            
+            if idx == 0:              
+                x_out, (h, c) = self.layers[idx].enc.f(emb_side)  
+            else:
+                if self.bidirectional:
+                    x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
+                else:
+                    x_cat = x_out
+                x_cat = torch.cat((x_cat, emb_side), dim=1)
+                x_out, (h, c) = self.layers[idx].enc.f(x_cat, (h, c))    
+                
+            # return form b/h
+            h_out = torch.sum(h, dim=0)  
+            y_out = self.layers[idx].enc.b(h_out)
+            
+            for idx_r in reversed(range(idx+1)):
+                y_out = self.layers[idx_r].ae.h(y_out)
+            
+            # filter
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            remain_idx = y_entr>threshold
+            total_remain_idx = entr>threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            
+            if sum(remain_idx) == 0: break
+            if idx+1 >= max_depth: break
+            
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            h = h[:,remain_idx,:]
+            c = c[:,remain_idx,:]
+        return pred, entr
+        
     @torch.no_grad()
     def inference(self, x, len_path=None):
         # full path inference by default
@@ -1369,21 +1385,173 @@ class LSTMALsideText(alSideModel):
                 x_out, (h, c) = self.layers[idx].enc.f(emb_side)        
                 
             else:
-                #print(x_out.shape)
                 if self.bidirectional:
                     x_cat = torch.cat((x_out[:, :, :self.l1_dim], x_out[:, :, self.l1_dim:]), dim=1)
                 else:
                     x_cat = x_out
                 x_cat = torch.cat((x_cat, emb_side), dim=1)
                 x_out, (h, c) = self.layers[idx].enc.f(x_cat, (h, c))                 
-                     
-        # bridge   
-        #print(f"h {h.size()}")
+
         h = torch.sum(h, dim=0)  
-        #print(f"h sum {h.size()}")          
         y_out = self.layers[len_path-1].enc.b(h)
         
         for idx in reversed(range(len_path)):
             y_out = self.layers[idx].ae.h(y_out)
             
         return y_out
+
+class LinearALsideText(alSideModel): 
+    def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
+        super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
+        
+        # emb
+        if self.same_emb:
+            if word_vec is not None:
+                self.emb = nn.Embedding.from_pretrained(word_vec, freeze=False)
+            else:
+                self.emb = nn.Embedding(vocab_size, emb_dim) 
+        else:
+            emb_layers = ModuleList([])
+            for idx in range(self.num_layer):
+                if word_vec is not None:
+                    emb = nn.Embedding.from_pretrained(word_vec, freeze=False)
+                else:
+                    emb = nn.Embedding(vocab_size, emb_dim) 
+                emb_layers.append(emb)
+            self.emb_layers = emb_layers
+          
+        # layers define  
+        layers = ModuleList([])
+        for idx in range(self.num_layer):
+            if idx == 0:
+                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, out_dim = class_num, 
+                                    ae_cri="ce",ae_act=[nn.Tanh(),nn.Sigmoid()])
+            else:
+                layer = LinearLayer(emb_dim, lab_dim, hid_dim=l1_dim, lr=lr, 
+                                    ae_cri="mse",ae_act=[nn.Tanh(),None])
+            layers.append(layer)
+        self.layers = layers  
+    
+    def forward(self, x, y):
+        layer_loss = []
+        y = nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        x_side = self.sidedata(x)
+        
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            # F Input shape [batch * seq_len * emb_dim] pool to [batch * 1 * emb_dim]
+            # F Output shape [batch * emb_dim] == [batch * l1_dim]
+            if self.same_emb:
+                emb_side = self.emb(x_side[idx])
+            else:
+                emb_side = self.emb_layers[idx](x_side[idx])
+                
+            emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
+            if idx == 0:             
+                x_out, y_out, ae_out, as_out = layer(emb_side_pool.view(-1,self.emb_dim), y)
+                layer_loss.append([ae_out.item(), as_out.item()])
+            else:
+                x_out = x_out.view(-1,1,self.emb_dim)
+                x_cat = torch.cat((x_out, emb_side_pool), dim=1)
+                x_cat = nn.functional.adaptive_max_pool2d(x_cat,(1,self.emb_dim))
+                x_out, y_out, ae_out, as_out = layer(x_cat.view(-1,self.emb_dim), y_out)
+                layer_loss.append([ae_out.item(), as_out.item()])
+        return layer_loss
+    
+    def layer_forward(self, x, idx):
+        pass
+            
+    def bridge_return(self, x, len_path):
+        pass
+    
+    @torch.no_grad()    
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+
+        for idx in range(self.num_layer):
+            x_side = self.sidedata(x)
+
+            # f forward
+            if self.same_emb:
+                emb_side = self.emb(x_side[idx])
+            else:
+                emb_side = self.emb_layers[idx](x_side[idx])
+
+            emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
+            
+            if idx == 0:              
+                x_out = self.layers[idx].enc.f(emb_side_pool.view(-1,self.emb_dim))        
+            else:
+                x_out = x_out.view(-1,1,self.emb_dim)
+                x_cat = torch.cat((x_out, emb_side_pool), dim=1)
+                x_cat = nn.functional.adaptive_max_pool2d(x_cat,(1,self.emb_dim))
+                x_out = self.layers[idx].enc.f(x_cat.view(-1,self.emb_dim))                        
+            
+            # return form b/h
+            y_out = self.layers[idx].enc.b(x_out)
+            for idx_r in reversed(range(idx+1)):
+                y_out = self.layers[idx_r].ae.h(y_out)
+                
+            # filter
+            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            remain_idx = y_entr>threshold
+            total_remain_idx = entr>threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            
+            if sum(remain_idx) == 0: break
+            if idx+1 >= max_depth: break
+            
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            
+        return pred, entr
+    
+    @torch.no_grad()
+    def inference(self, x, len_path=None):
+        # TODO: fix len_path-1
+        # full path inference by default
+        if len_path == None:
+            len_path = self.num_layer
+            
+        assert 1 <= len_path and len_path <= self.num_layer
+        
+        x_side = self.sidedata(x)
+  
+        for idx in range(len_path):
+            if self.same_emb:
+                emb_side = self.emb(x_side[idx])
+            else:
+                emb_side = self.emb_layers[idx](x_side[idx])
+            emb_side_pool = nn.functional.adaptive_max_pool2d(emb_side,(1,self.emb_dim))
+            
+            if idx == 0:              
+                x_out = self.layers[idx].enc.f(emb_side_pool.view(-1,self.emb_dim))        
+                
+            else:
+                x_out = x_out.view(-1,1,self.emb_dim)
+                x_cat = torch.cat((x_out, emb_side_pool), dim=1)
+                x_cat = nn.functional.adaptive_max_pool2d(x_cat,(1,self.emb_dim))
+                x_out = self.layers[idx].enc.f(x_cat.view(-1,self.emb_dim))                        
+                     
+        # bridge                    
+        y_out = self.layers[len_path-1].enc.b(x_out)
+        
+        for idx in reversed(range(len_path)):
+            y_out = self.layers[idx].ae.h(y_out)
+        #print(self.layers[0].ae.h)    
+        return y_out
+ 

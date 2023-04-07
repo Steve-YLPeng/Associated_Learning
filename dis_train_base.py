@@ -164,16 +164,13 @@ def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=N
     valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
     valid_acc = cor/num    
     return valid_AUC, valid_f1, valid_acc, valid_entr
-    #return valid_AUC, valid_acc, valid_entr
 
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
     if task == "text" or task == "classification":
         model.eval()
         cor, num = 0, 0
-        #y_out, y_tar = torch.Tensor([]),torch.Tensor([])
         y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
         
-        #data_loader = tqdm(data_loader)
         for x, y in data_loader:
             x, y = x.cuda(), y.cuda()
             pred = model.inference(x, shortcut)
@@ -181,65 +178,20 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
             y_entr = torch.cat((y_entr, torch.sum(torch.special.entr(pred).cpu(),dim=-1)), 0)            
             y_out = torch.cat((y_out, pred.cpu()), 0)
             y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
-            #cor += (pred.argmax(-1) == y).sum().item()
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
-            #gc.collect()
-        #print(y_entr)
+
         valid_entr = torch.mean(y_entr).item()
         valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
         valid_acc = cor/num
-        #del y_out
-        #del y_tar
-        #print("test_gc",gc.collect())
-        #return valid_AUC, valid_acc, valid_entr
+
         return valid_AUC, valid_f1, valid_acc, valid_entr
 
-    elif task == "regression":
-        model.eval()
-        out_loss, num, tot_loss = 0, 0, []
-        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
-        #data_loader = tqdm(data_loader)
-        for x, y in data_loader:
-            x, y = x.cuda(), y.cuda()
-            pred = model.inference(x, shortcut)
-            y_out = torch.cat((y_out, pred.cpu()), 0)
-            y_tar = torch.cat((y_tar, y.cpu()), 0)
-            out_loss += mse_loss(pred, y, reduction='sum')
-            num += x.size(0)
-            #gc.collect()
-            
-        valid_out = mse_loss(y_out, y_tar).item()
-        valid_r2 = r2_score(y_out, y_tar).item()
-        #return torch.sqrt(out_loss/num).item()
-        #del y_out
-        #del y_tar
-        return valid_out, valid_r2
-
-def predicting_for_sst(args, model, vocab):
-
-    test_data = load_dataset('sst2', split='test')
-    test_text = [b['sentence'] for b in test_data]
-    test_label = [b['label'] for b in test_data]
-    clean_test = [data_preprocessing(t, True) for t in test_text]
-    
-    testset = Textset(clean_test, test_label, vocab, args.max_len)
-    valid_loader = DataLoader(testset, batch_size=1, collate_fn = testset.collate)
-
-    all_pred = []
-    all_idx = []
-    for i, (x, y) in enumerate(valid_loader):
-        x = x.cuda()
-        pred = model.inference(x).argmax(1).squeeze(0)
-        all_pred.append(pred.item())
-        all_idx.append(i)
-    
-    pred_file = {'index':all_idx, 'prediction':all_pred}
-    output = pd.DataFrame(pred_file)
-    output.to_csv('SST-2.tsv', sep='\t', index=False)
-
 def main():
+    
+    ### start of init
+    
     init_start_time = time.process_time()
     args = get_args()
     if args.side_dim is not None:
@@ -315,6 +267,8 @@ def main():
     print("init_time %s"%(time.process_time()-init_start_time))
     print('Start Training')
     total_train_time = time.process_time()
+    
+    ### start of training/validation
     
     if args.task == "text" or args.task == "classification":
         
