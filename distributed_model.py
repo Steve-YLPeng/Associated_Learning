@@ -5,27 +5,7 @@ from torch.nn import ModuleList
 from typing import List
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import math
-
-def initialize_weights(model):
-    if isinstance(model, nn.Linear):
-        nn.init.xavier_uniform_(model.weight.data)
-    elif isinstance(model, nn.LSTM):
-        for name, param in model.named_parameters():
-            if 'bias' in name:
-                nn.init.constant_(param, 0.0)
-            elif 'weight_ih' in name:
-                nn.init.kaiming_normal_(param)
-            elif 'weight_hh' in name:
-                nn.init.orthogonal_(param)
-    elif isinstance(model, TransformerEncoder):
-        return
-        for name, param in model.named_parameters():
-            if 'bias' in name:
-                nn.init.constant_(param, 0.0)
-            elif 'weight_ih' in name:
-                nn.init.kaiming_normal_(param)
-            elif 'weight_hh' in name:
-                nn.init.orthogonal_(param)
+from utils import *
 
 ### Layer component definition
 class AE(nn.Module):
@@ -36,9 +16,8 @@ class AE(nn.Module):
     #   h: Decoder of AutoEncoder
     # cri: Loss function for AutoEncoder loss
     ############################################
-    def __init__(self, inp_dim, out_dim, cri='ce', act=None):
+    def __init__(self, inp_dim:int, out_dim:int, cri='ce', act=None):
         super().__init__()
-
         
         if act == None:
             self.g = nn.Sequential(
@@ -101,25 +80,27 @@ class ENC(nn.Module):
     #   b: Bridge function
     # cri: Loss function for associated loss
     ############################################
-    def __init__(self, inp_dim, out_dim, lab_dim=128, f='emb', n_heads=4, word_vec=None, bidirectional=True):
+    def __init__(self, inp_dim:int, out_dim:int, lab_dim:int=128, f='emb', 
+                 n_heads:int=4, word_vec=None, bidirectional=True, conv:nn.Module=None):
         super().__init__()
-        
-        self.b = nn.Sequential(
-            nn.Linear(out_dim, lab_dim),
-            nn.Tanh()
-        )
-        
+
         self.mode = f
         if f == 'emb':
             self.f = nn.Embedding(inp_dim, out_dim)
             if word_vec is not None:
                 self.f = nn.Embedding.from_pretrained(word_vec, freeze=False)
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                nn.Tanh()
+            )
         elif f == 'lstm':
             self.f = nn.LSTM(inp_dim, out_dim, bidirectional=bidirectional, batch_first=True)
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                nn.Tanh()
+            )
         elif f == 'trans':
             self.f = TransformerEncoder(d_model=inp_dim, d_ff=out_dim, n_heads=n_heads)
-            #self.f = nn.TransformerEncoderLayer(d_model=inp_dim, nhead=6)
-            
             self.b = nn.Sequential(
                 nn.Linear(inp_dim, lab_dim),
                 nn.Tanh()
@@ -127,18 +108,17 @@ class ENC(nn.Module):
         elif f == 'linear':
             self.f = nn.Sequential(
                 nn.Linear(inp_dim, out_dim),
-                #nn.BatchNorm1d(out_dim),
                 nn.ELU(),
-                #nn.Tanh(),
-                #nn.Sigmoid(),
-                
             )
             self.b = nn.Sequential(
                 nn.Linear(out_dim, lab_dim),
-                #nn.BatchNorm1d(out_dim),
-                #nn.ELU(),
                 nn.Tanh(),
             )
+
+        elif f == 'cnn':
+            flatten_size = out_dim
+            self.f = conv
+            self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
 
         self.cri = nn.MSELoss()
     
@@ -150,13 +130,11 @@ class ENC(nn.Module):
             enc_x = self.f(x)
         elif self.mode == 'lstm':
             enc_x, hidden = self.f(x, hidden)
-            #print(f"enc h {h[0].size()}") # 2x128x300
-            #print(f"enc c {h[1].size()}")
         elif self.mode == 'trans':
-            enc_x = self.f(x, mask=mask)
-            #print(mask)
-            #enc_x = self.f(x, src_mask=mask)
-            
+            enc_x = self.f(x, mask=mask)            
+        #TODO
+        elif self.mode == 'cnn':
+            enc_x = self.f(x)
             
         red_x = self.reduction(enc_x, mask, hidden)
         red_x = self.b(red_x)
@@ -176,14 +154,15 @@ class ENC(nn.Module):
             return _h
 
         elif self.mode == 'trans':
-
             denom = torch.sum(mask, -1, keepdim=True)
             feat = torch.sum(x * mask.unsqueeze(-1), dim=1) / denom
             return feat
         
         elif self.mode == 'linear':
             return x
-        
+        #TODO
+        elif self.mode == 'cnn':
+            return x
         
 ### AL layers definition
 class EMBLayer(nn.Module):

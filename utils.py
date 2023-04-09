@@ -1,13 +1,13 @@
+import torch
+import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
-from torch.nn.utils.rnn import pad_sequence
-from torch.nn import ConstantPad1d
+from torchvision import transforms, datasets
+
 import re
 from nltk.corpus import stopwords
 import string
 import itertools
 from collections import Counter
-from itertools import count
-import torch
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy
@@ -17,9 +17,151 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_california_housing, fetch_kddcup99
 from sklearn.preprocessing import LabelEncoder, StandardScaler
+from transformer.encoder import TransformerEncoder
+
 
 stop_words = set(stopwords.words('english'))
 
+### utils fuction for CNN
+class TwoCropTransform:
+    """Create two crops of the same image"""
+    def __init__(self, transform1, transform2=None):
+        self.transform1 = transform1
+        if transform1 != None and transform2 == None:
+            self.transform2 = transform1
+        else:
+            self.transform2 = transform2
+
+    def __call__(self, x):
+        if self.transform1 == None:
+            return [x, x]
+        return [self.transform1(x), self.transform2(x)]
+
+class Flatten(nn.Module):
+    def forward(self, x):
+        batch_size = x.shape[0]
+        return x.view(batch_size, -1)
+
+### 
+def initialize_weights(model):
+    if isinstance(model, nn.Linear):
+        nn.init.xavier_uniform_(model.weight.data)
+    elif isinstance(model, nn.LSTM):
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0.0)
+            elif 'weight_ih' in name:
+                nn.init.kaiming_normal_(param)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param)
+    elif isinstance(model, TransformerEncoder):
+        return
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0.0)
+            elif 'weight_ih' in name:
+                nn.init.kaiming_normal_(param)
+            elif 'weight_hh' in name:
+                nn.init.orthogonal_(param)
+                
+def get_img_data(args):
+    dataset = args.dataset
+    train_bsz = args.batch_size
+    test_bsz = args.batch_size
+    augmentation_type = args.aug_type
+    
+    if dataset == "cifar10":
+        n_classes = 10
+        mean = (0.4914, 0.4822, 0.4465)
+        std = (0.2023, 0.1994, 0.2010)
+    elif dataset == "cifar100":
+        n_classes = 100
+        mean = (0.5071, 0.4867, 0.4408)
+        std = (0.2675, 0.2565, 0.2761)
+    elif dataset == "tinyImageNet":
+        n_classes = 200
+    else:
+        raise ValueError("Dataset not supported: {}".format(dataset))
+    
+    if dataset == "cifar10" or dataset == "cifar100":
+        normalize = transforms.Normalize(mean=mean, std=std)
+        weak_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        strong_transform = transforms.Compose([
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
+            ], p=0.8),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+    if dataset == "tinyImageNet":
+        normalize = transforms.Normalize([0.4802, 0.4481, 0.3975], [0.2770, 0.2691, 0.2821])
+
+        
+        weak_transform = transforms.Compose([
+        transforms.Resize(32),
+        transforms.RandomCrop(32, padding=4),
+        transforms.RandomHorizontalFlip(),
+        transforms.ToTensor(),
+        normalize,
+        ])
+
+        strong_transform = transforms.Compose([
+            transforms.Resize(32),
+            transforms.RandomCrop(32, padding=4),
+            transforms.RandomHorizontalFlip(),
+            transforms.RandomApply([
+                transforms.ColorJitter(0.4, 0.4, 0.4, 0.1)
+            ], p=0.8),
+            transforms.RandomGrayscale(p=0.2),
+            transforms.ToTensor(),
+            normalize,
+        ])
+
+        test_transform = transforms.Compose([
+            transforms.Resize(32),
+            transforms.ToTensor(),
+            normalize
+        ])
+
+    if augmentation_type == "basic":
+        source_transform = weak_transform
+        target_transform = None
+    elif augmentation_type == "strong":
+        source_transform = TwoCropTransform(weak_transform, strong_transform)
+        target_transform = TwoCropTransform(None)
+    else:
+        raise ValueError("Augmentation type not supported: {}".format(augmentation_type))
+
+
+    if dataset == "cifar10":
+        train_set = datasets.CIFAR10(root='./cifar10', transform=source_transform, target_transform = target_transform,  download=True)
+        test_set = datasets.CIFAR10(root='./cifar10', train=False, transform=test_transform)
+    elif dataset == "cifar100":
+        train_set = datasets.CIFAR100(root='./cifar100', transform=source_transform, target_transform = target_transform, download=True)
+        test_set = datasets.CIFAR100(root='./cifar100', train=False, transform=test_transform)
+    elif dataset == "tinyImageNet":
+        train_set = datasets.ImageFolder('./tiny-imagenet-200/train', transform=source_transform)
+        test_set = datasets.ImageFolder('./tiny-imagenet-200/val', transform=test_transform)
+
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bsz, shuffle=True, pin_memory=True, num_workers=4)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=test_bsz, shuffle=False, pin_memory=True)
+
+    return train_loader, test_loader, n_classes
 def get_data(args):
 
     if args.dataset == 'imdb':
@@ -94,7 +236,6 @@ def get_data(args):
         
         feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
         
-        
     elif args.dataset == 'kdd99':
         
         class_num = 23
@@ -152,9 +293,7 @@ def get_data(args):
         test_target = data_test[label]
         args.feature_dim = feature_train.shape[1]
         del df
-        
-        
-        
+            
     elif args.dataset == 'ailerons':
         
         from mit_d3m import load_dataset
@@ -489,9 +628,9 @@ class Textset(Dataset):
         
         x = [torch.tensor(x) for x,y in batch]
         y = [y for x,y in batch]
-        #x[0] = ConstantPad1d((0, self.max_len - x[0].shape[0]), 0)(x[0])
+        #x[0] = nn.ConstantPad1d((0, self.max_len - x[0].shape[0]), 0)(x[0])
 
-        x_tensor = pad_sequence(x, batch_first=True)
+        x_tensor = nn.utils.rnn.pad_sequence(x, batch_first=True)
         #print(x_tensor)
         y = torch.tensor(y)
         return x_tensor, y
