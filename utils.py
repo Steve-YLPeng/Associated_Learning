@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms, datasets
-
+import math
 import re
 from nltk.corpus import stopwords
 import string
@@ -22,7 +22,8 @@ from transformer.encoder import TransformerEncoder
 
 stop_words = set(stopwords.words('english'))
 
-### utils fuction for CNN
+
+
 class TwoCropTransform:
     """Create two crops of the same image"""
     def __init__(self, transform1, transform2=None):
@@ -51,9 +52,15 @@ def initialize_weights(model):
             if 'bias' in name:
                 nn.init.constant_(param, 0.0)
             elif 'weight_ih' in name:
-                nn.init.kaiming_normal_(param)
+                nn.init.kaiming_normal_(param, nonlinearity='relu')
             elif 'weight_hh' in name:
                 nn.init.orthogonal_(param)
+    elif isinstance(model, nn.LSTM):
+        for name, param in model.named_parameters():
+            if 'bias' in name:
+                nn.init.constant_(param, 0.0)
+            else:
+                nn.init.kaiming_normal_(param, nonlinearity='relu')
     elif isinstance(model, TransformerEncoder):
         return
         for name, param in model.named_parameters():
@@ -63,11 +70,21 @@ def initialize_weights(model):
                 nn.init.kaiming_normal_(param)
             elif 'weight_hh' in name:
                 nn.init.orthogonal_(param)
-                
+
+def confidence(pred, type="entropy"):
+    ### shannon entropy as confidence
+    if type=="entropy":
+        return torch.sum(torch.special.entr(pred),dim=-1) / math.log(pred.size(-1))
+    ### max pred value as confidence
+    elif type=="max":
+        return torch.max(pred,dim=-1)[0]
+    else:
+        raise ValueError("Confidence type not supported: {}".format(type))
+           
 def get_img_data(args):
     dataset = args.dataset
-    train_bsz = args.batch_size
-    test_bsz = args.batch_size
+    train_bsz = args.batch_train
+    test_bsz = args.batch_test
     augmentation_type = args.aug_type
     
     if dataset == "cifar10":
@@ -149,14 +166,14 @@ def get_img_data(args):
 
 
     if dataset == "cifar10":
-        train_set = datasets.CIFAR10(root='./cifar10', transform=source_transform, target_transform = target_transform,  download=True)
-        test_set = datasets.CIFAR10(root='./cifar10', train=False, transform=test_transform)
+        train_set = datasets.CIFAR10(root='./data/cifar10', transform=source_transform, target_transform = target_transform,  download=True)
+        test_set = datasets.CIFAR10(root='./data/cifar10', train=False, transform=test_transform)
     elif dataset == "cifar100":
-        train_set = datasets.CIFAR100(root='./cifar100', transform=source_transform, target_transform = target_transform, download=True)
-        test_set = datasets.CIFAR100(root='./cifar100', train=False, transform=test_transform)
+        train_set = datasets.CIFAR100(root='./data/cifar100', transform=source_transform, target_transform = target_transform, download=True)
+        test_set = datasets.CIFAR100(root='./data/cifar100', train=False, transform=test_transform)
     elif dataset == "tinyImageNet":
-        train_set = datasets.ImageFolder('./tiny-imagenet-200/train', transform=source_transform)
-        test_set = datasets.ImageFolder('./tiny-imagenet-200/val', transform=test_transform)
+        train_set = datasets.ImageFolder('./data/tiny-imagenet-200/train', transform=source_transform)
+        test_set = datasets.ImageFolder('./data/tiny-imagenet-200/val', transform=test_transform)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bsz, shuffle=True, pin_memory=True, num_workers=4)
     test_loader = torch.utils.data.DataLoader(test_set, batch_size=test_bsz, shuffle=False, pin_memory=True)
@@ -389,9 +406,9 @@ def get_data(args):
         trainset = Textset(clean_train, train_label, vocab, args.max_len)
         testset = Textset(clean_test, test_label, vocab, args.max_len)
         validset = Textset(clean_valid, valid_label, vocab, args.max_len)
-        train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
-        test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
-        valid_loader = DataLoader(validset, batch_size=args.batch_size, collate_fn = validset.collate)
+        train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
+        test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
+        valid_loader = DataLoader(validset, batch_size=args.batch_test, collate_fn = validset.collate)
 
         print(f"train size {len(trainset)}, valid size {len(validset)}, test size {len(testset)}")
         return train_loader, valid_loader, test_loader, class_num, vocab
@@ -399,16 +416,16 @@ def get_data(args):
     elif args.task == "regression" :
         trainset = StructDataset(feature_train, train_target)
         testset = StructDataset(feature_test, test_target)
-        train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
-        test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
+        train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
+        test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
         
         return train_loader, valid_loader, test_loader, target_num
     
     elif args.task == "classification":
         trainset = StructDataset(feature_train, train_target)
         testset = StructDataset(feature_test, test_target)
-        train_loader = DataLoader(trainset, batch_size=args.batch_size, collate_fn = trainset.collate, shuffle=True)
-        test_loader = DataLoader(testset, batch_size=args.batch_size, collate_fn = testset.collate)
+        train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
+        test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
         
         return train_loader, valid_loader, test_loader, class_num
 

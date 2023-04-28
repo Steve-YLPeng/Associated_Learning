@@ -299,7 +299,7 @@ def main():
                     valid_acc.append(acc)
                     valid_entr.append(entr)
                     if args.lr_schedule != None:
-                        model.schedulerStep(layer,AUC)
+                        model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
                     print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
                     print("ep%s_l%s_test_time %s"%(epoch, layer ,time.process_time()-ep_test_start_time))

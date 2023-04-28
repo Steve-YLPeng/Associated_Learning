@@ -1,0 +1,2438 @@
+model: CNN_AL(
+  (layers): ModuleList(
+    (0): CNNLayer(
+      (enc): ENC(
+        (f): Sequential(
+          (0): Sequential(
+            (0): Conv2d(3, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+          (1): Sequential(
+            (0): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (b): Sequential(
+          (0): Flatten()
+          (1): Linear(in_features=32768, out_features=640, bias=True)
+          (2): Sigmoid()
+          (3): Linear(in_features=640, out_features=128, bias=True)
+          (4): Sigmoid()
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=200, out_features=128, bias=True)
+          (1): Sigmoid()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=200, bias=True)
+          (1): Sigmoid()
+        )
+        (cri): CrossEntropyLoss()
+      )
+    )
+    (1): CNNLayer(
+      (enc): ENC(
+        (f): Sequential(
+          (0): Sequential(
+            (0): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+          (1): Sequential(
+            (0): Conv2d(32, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (b): Sequential(
+          (0): Flatten()
+          (1): Linear(in_features=8192, out_features=640, bias=True)
+          (2): Sigmoid()
+          (3): Linear(in_features=640, out_features=128, bias=True)
+          (4): Sigmoid()
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Sigmoid()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+    (2): CNNLayer(
+      (enc): ENC(
+        (f): Sequential(
+          (0): Sequential(
+            (0): Conv2d(32, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+          (1): Sequential(
+            (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (b): Sequential(
+          (0): Flatten()
+          (1): Linear(in_features=16384, out_features=640, bias=True)
+          (2): Sigmoid()
+          (3): Linear(in_features=640, out_features=128, bias=True)
+          (4): Sigmoid()
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Sigmoid()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+    (3): CNNLayer(
+      (enc): ENC(
+        (f): Sequential(
+          (0): Sequential(
+            (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+            (1): ReLU()
+          )
+          (1): Sequential(
+            (0): Conv2d(64, 64, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1))
+            (1): ReLU()
+          )
+        )
+        (b): Sequential(
+          (0): Flatten()
+          (1): Linear(in_features=4096, out_features=640, bias=True)
+          (2): Sigmoid()
+          (3): Linear(in_features=640, out_features=128, bias=True)
+          (4): Sigmoid()
+        )
+        (cri): MSELoss()
+      )
+      (ae): AE(
+        (g): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+          (1): Sigmoid()
+        )
+        (h): Sequential(
+          (0): Linear(in_features=128, out_features=128, bias=True)
+        )
+        (cri): MSELoss()
+      )
+    )
+  )
+)
+layers.0.enc.f.0.0.weight 864
+layers.0.enc.f.0.0.bias 32
+layers.0.enc.f.1.0.weight 9216
+layers.0.enc.f.1.0.bias 32
+layers.0.enc.b.1.weight 20971520
+layers.0.enc.b.1.bias 640
+layers.0.enc.b.3.weight 81920
+layers.0.enc.b.3.bias 128
+layers.0.ae.g.0.weight 25600
+layers.0.ae.g.0.bias 128
+layers.0.ae.h.0.weight 25600
+layers.0.ae.h.0.bias 200
+layers.1.enc.f.0.0.weight 9216
+layers.1.enc.f.0.0.bias 32
+layers.1.enc.f.1.0.weight 9216
+layers.1.enc.f.1.0.bias 32
+layers.1.enc.b.1.weight 5242880
+layers.1.enc.b.1.bias 640
+layers.1.enc.b.3.weight 81920
+layers.1.enc.b.3.bias 128
+layers.1.ae.g.0.weight 16384
+layers.1.ae.g.0.bias 128
+layers.1.ae.h.0.weight 16384
+layers.1.ae.h.0.bias 128
+layers.2.enc.f.0.0.weight 18432
+layers.2.enc.f.0.0.bias 64
+layers.2.enc.f.1.0.weight 36864
+layers.2.enc.f.1.0.bias 64
+layers.2.enc.b.1.weight 10485760
+layers.2.enc.b.1.bias 640
+layers.2.enc.b.3.weight 81920
+layers.2.enc.b.3.bias 128
+layers.2.ae.g.0.weight 16384
+layers.2.ae.g.0.bias 128
+layers.2.ae.h.0.weight 16384
+layers.2.ae.h.0.bias 128
+layers.3.enc.f.0.0.weight 36864
+layers.3.enc.f.0.0.bias 64
+layers.3.enc.f.1.0.weight 36864
+layers.3.enc.f.1.0.bias 64
+layers.3.enc.b.1.weight 2621440
+layers.3.enc.b.1.bias 640
+layers.3.enc.b.3.weight 81920
+layers.3.enc.b.3.bias 128
+layers.3.ae.g.0.weight 16384
+layers.3.ae.g.0.bias 128
+layers.3.ae.h.0.weight 16384
+layers.3.ae.h.0.bias 128
+Total Trainable Params: 39960872
+init_time 1.2889403140000002
+Start Training
+gc 76
+Train Epoch0 Acc 0.00492 (984/200000), AUC 0.4985763132572174
+ep0_train_time 38.025499195
+Test Epoch0 layer0 Acc 0.005, AUC 0.6386328339576721, avg_entr 72.95403289794922, f1 0.004999999888241291
+ep0_l0_test_time 2.2030608199999975
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 0
+Test Epoch0 layer1 Acc 0.005, AUC 0.5100253820419312, avg_entr 72.94938659667969, f1 0.004999999888241291
+ep0_l1_test_time 2.1669403519999975
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 0
+Test Epoch0 layer2 Acc 0.005, AUC 0.4948180317878723, avg_entr 72.949462890625, f1 0.004999999888241291
+ep0_l2_test_time 2.216017356000002
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 0
+Test Epoch0 layer3 Acc 0.005, AUC 0.5030999779701233, avg_entr 72.95079040527344, f1 0.004999999888241291
+ep0_l3_test_time 2.166835483
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 0
+gc 0
+Train Epoch1 Acc 0.00558 (1116/200000), AUC 0.5002298951148987
+ep1_train_time 36.568100838
+Test Epoch1 layer0 Acc 0.0216, AUC 0.7037143111228943, avg_entr 54.97297668457031, f1 0.02160000056028366
+ep1_l0_test_time 2.1900100629999883
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 1
+Test Epoch1 layer1 Acc 0.005, AUC 0.5465193390846252, avg_entr 55.057674407958984, f1 0.004999999888241291
+ep1_l1_test_time 2.1748051849999968
+Test Epoch1 layer2 Acc 0.005, AUC 0.4858579933643341, avg_entr 54.990875244140625, f1 0.004999999888241291
+ep1_l2_test_time 2.2156845699999934
+Test Epoch1 layer3 Acc 0.005, AUC 0.5066519379615784, avg_entr 54.97138214111328, f1 0.004999999888241291
+ep1_l3_test_time 2.1671734490000034
+gc 0
+Train Epoch2 Acc 0.005945 (1189/200000), AUC 0.5022550821304321
+ep2_train_time 36.980777997000004
+Test Epoch2 layer0 Acc 0.0511, AUC 0.7289695739746094, avg_entr 26.776819229125977, f1 0.051100000739097595
+ep2_l0_test_time 2.206178988000005
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 2
+Test Epoch2 layer1 Acc 0.0135, AUC 0.6322783827781677, avg_entr 27.0347900390625, f1 0.013500000350177288
+ep2_l1_test_time 2.217968812999999
+Test Epoch2 layer2 Acc 0.005, AUC 0.5414563417434692, avg_entr 26.86815071105957, f1 0.004999999888241291
+ep2_l2_test_time 2.1997594549999917
+Test Epoch2 layer3 Acc 0.005, AUC 0.5013889074325562, avg_entr 26.951778411865234, f1 0.004999999888241291
+ep2_l3_test_time 2.206093525
+gc 0
+Train Epoch3 Acc 0.00592 (1184/200000), AUC 0.507641613483429
+ep3_train_time 37.598197803999994
+Test Epoch3 layer0 Acc 0.0763, AUC 0.7516557574272156, avg_entr 14.325329780578613, f1 0.0763000026345253
+ep3_l0_test_time 2.2126304409999875
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 3
+Test Epoch3 layer1 Acc 0.0287, AUC 0.6800206899642944, avg_entr 14.241600036621094, f1 0.028699999675154686
+ep3_l1_test_time 2.1851930020000054
+Test Epoch3 layer2 Acc 0.0056, AUC 0.6020764112472534, avg_entr 14.417701721191406, f1 0.005600000265985727
+ep3_l2_test_time 2.246822632000004
+Test Epoch3 layer3 Acc 0.005, AUC 0.47826817631721497, avg_entr 14.259249687194824, f1 0.004999999888241291
+ep3_l3_test_time 2.1940747709999755
+gc 0
+Train Epoch4 Acc 0.006955 (1391/200000), AUC 0.5161536335945129
+ep4_train_time 38.081972992000004
+Test Epoch4 layer0 Acc 0.0987, AUC 0.7660215497016907, avg_entr 8.667269706726074, f1 0.09870000183582306
+ep4_l0_test_time 2.1867092610000043
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 4
+Test Epoch4 layer1 Acc 0.0543, AUC 0.7208425402641296, avg_entr 8.750815391540527, f1 0.05429999902844429
+ep4_l1_test_time 2.2104073520000043
+Test Epoch4 layer2 Acc 0.0231, AUC 0.6452410221099854, avg_entr 8.685798645019531, f1 0.023099999874830246
+ep4_l2_test_time 2.2252515890000097
+Test Epoch4 layer3 Acc 0.0038, AUC 0.5278713703155518, avg_entr 8.684771537780762, f1 0.003800000064074993
+ep4_l3_test_time 2.2326407539999877
+gc 0
+Train Epoch5 Acc 0.009215 (1843/200000), AUC 0.5370363593101501
+ep5_train_time 38.458764883999976
+Test Epoch5 layer0 Acc 0.1164, AUC 0.7769747972488403, avg_entr 5.695690631866455, f1 0.11640000343322754
+ep5_l0_test_time 2.196246797000015
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 5
+Test Epoch5 layer1 Acc 0.0806, AUC 0.7428569197654724, avg_entr 5.694516181945801, f1 0.08060000091791153
+ep5_l1_test_time 2.1927131780000195
+Test Epoch5 layer2 Acc 0.0418, AUC 0.6895854473114014, avg_entr 5.69221830368042, f1 0.04179999977350235
+ep5_l2_test_time 2.245794224000008
+Test Epoch5 layer3 Acc 0.0089, AUC 0.5771539211273193, avg_entr 5.758083820343018, f1 0.008899999782443047
+ep5_l3_test_time 2.276000934000024
+gc 0
+Train Epoch6 Acc 0.014 (2800/200000), AUC 0.5557193160057068
+ep6_train_time 38.76403154000002
+Test Epoch6 layer0 Acc 0.1322, AUC 0.77846360206604, avg_entr 3.9781241416931152, f1 0.13220000267028809
+ep6_l0_test_time 2.187013133999983
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 6
+Test Epoch6 layer1 Acc 0.098, AUC 0.7531764507293701, avg_entr 3.961540699005127, f1 0.09799999743700027
+ep6_l1_test_time 2.28614529500004
+Test Epoch6 layer2 Acc 0.0612, AUC 0.7125334143638611, avg_entr 3.9559996128082275, f1 0.06119999662041664
+ep6_l2_test_time 2.224352194000005
+Test Epoch6 layer3 Acc 0.0164, AUC 0.6130293607711792, avg_entr 3.9139504432678223, f1 0.01640000008046627
+ep6_l3_test_time 2.231591131000016
+gc 0
+Train Epoch7 Acc 0.020205 (4041/200000), AUC 0.5817973613739014
+ep7_train_time 38.591851996
+Test Epoch7 layer0 Acc 0.1508, AUC 0.7816500663757324, avg_entr 2.8459274768829346, f1 0.15080000460147858
+ep7_l0_test_time 2.225515966000046
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 7
+Test Epoch7 layer1 Acc 0.1247, AUC 0.7624555230140686, avg_entr 2.860701560974121, f1 0.12470000237226486
+ep7_l1_test_time 2.1839923569999655
+Test Epoch7 layer2 Acc 0.0914, AUC 0.7407476305961609, avg_entr 2.846330404281616, f1 0.09139999747276306
+ep7_l2_test_time 2.2256100250000372
+Test Epoch7 layer3 Acc 0.0316, AUC 0.6487247943878174, avg_entr 2.822664976119995, f1 0.031599998474121094
+ep7_l3_test_time 2.2142387999999755
+gc 0
+Train Epoch8 Acc 0.02976 (5952/200000), AUC 0.6139065623283386
+ep8_train_time 38.86161659700002
+Test Epoch8 layer0 Acc 0.1546, AUC 0.7807714939117432, avg_entr 2.124782085418701, f1 0.15459999442100525
+ep8_l0_test_time 2.2063090609999563
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 8
+Test Epoch8 layer1 Acc 0.1357, AUC 0.7665991187095642, avg_entr 2.1195740699768066, f1 0.13570000231266022
+ep8_l1_test_time 2.212794017999954
+Test Epoch8 layer2 Acc 0.1089, AUC 0.740521252155304, avg_entr 2.105036497116089, f1 0.10890001058578491
+ep8_l2_test_time 2.231312906000028
+Test Epoch8 layer3 Acc 0.0393, AUC 0.6693364977836609, avg_entr 2.0780677795410156, f1 0.03929999843239784
+ep8_l3_test_time 2.2349120510000375
+gc 0
+Train Epoch9 Acc 0.046345 (9269/200000), AUC 0.6428336501121521
+ep9_train_time 38.702027832
+Test Epoch9 layer0 Acc 0.1738, AUC 0.7888404130935669, avg_entr 1.5995897054672241, f1 0.1738000065088272
+ep9_l0_test_time 2.2137798100000055
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 9
+Test Epoch9 layer1 Acc 0.1565, AUC 0.7731412649154663, avg_entr 1.5925679206848145, f1 0.15649999678134918
+ep9_l1_test_time 2.1789990949999947
+Test Epoch9 layer2 Acc 0.1327, AUC 0.7581524848937988, avg_entr 1.5850940942764282, f1 0.13269999623298645
+ep9_l2_test_time 2.2271300989999645
+Test Epoch9 layer3 Acc 0.0529, AUC 0.6996563076972961, avg_entr 1.5449283123016357, f1 0.05290000140666962
+ep9_l3_test_time 2.227103657999976
+gc 0
+Train Epoch10 Acc 0.06096 (12192/200000), AUC 0.6696415543556213
+ep10_train_time 38.72523880000006
+Test Epoch10 layer0 Acc 0.1866, AUC 0.7877259254455566, avg_entr 1.2383226156234741, f1 0.1865999847650528
+ep10_l0_test_time 2.2215021429999524
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 10
+Test Epoch10 layer1 Acc 0.1711, AUC 0.7775187492370605, avg_entr 1.238511562347412, f1 0.17110000550746918
+ep10_l1_test_time 2.1840320409999094
+Test Epoch10 layer2 Acc 0.1519, AUC 0.7588292956352234, avg_entr 1.202126145362854, f1 0.15189999341964722
+ep10_l2_test_time 2.212923848999935
+Test Epoch10 layer3 Acc 0.0756, AUC 0.7173753976821899, avg_entr 1.1537349224090576, f1 0.07559999823570251
+ep10_l3_test_time 2.2071070749999535
+gc 0
+Train Epoch11 Acc 0.07488 (14976/200000), AUC 0.6906226277351379
+ep11_train_time 38.77167396499999
+Test Epoch11 layer0 Acc 0.1915, AUC 0.7870312333106995, avg_entr 0.9519159197807312, f1 0.1914999783039093
+ep11_l0_test_time 2.2187193620000016
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 11
+Test Epoch11 layer1 Acc 0.1814, AUC 0.7768949270248413, avg_entr 0.9401095509529114, f1 0.18139998614788055
+ep11_l1_test_time 2.190486842999917
+Test Epoch11 layer2 Acc 0.1702, AUC 0.764894425868988, avg_entr 0.9375032186508179, f1 0.17020000517368317
+ep11_l2_test_time 2.2200429029999214
+Test Epoch11 layer3 Acc 0.0889, AUC 0.7328264117240906, avg_entr 0.8873670101165771, f1 0.08889999985694885
+ep11_l3_test_time 2.2076981110000133
+gc 0
+Train Epoch12 Acc 0.090585 (18117/200000), AUC 0.7079216241836548
+ep12_train_time 38.72971997500008
+Test Epoch12 layer0 Acc 0.1958, AUC 0.7920240759849548, avg_entr 0.764779806137085, f1 0.1958000212907791
+ep12_l0_test_time 2.216048809999961
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 12
+Test Epoch12 layer1 Acc 0.1939, AUC 0.7812254428863525, avg_entr 0.7546566128730774, f1 0.193900004029274
+ep12_l1_test_time 2.1762022789999946
+Test Epoch12 layer2 Acc 0.1816, AUC 0.7626312375068665, avg_entr 0.7506648302078247, f1 0.18160000443458557
+ep12_l2_test_time 2.2066996819999076
+Test Epoch12 layer3 Acc 0.1087, AUC 0.7419401407241821, avg_entr 0.7239751219749451, f1 0.1086999922990799
+ep12_l3_test_time 2.22144997099997
+gc 0
+Train Epoch13 Acc 0.103805 (20761/200000), AUC 0.7199979424476624
+ep13_train_time 38.96055233499999
+Test Epoch13 layer0 Acc 0.2051, AUC 0.7897902131080627, avg_entr 0.6106559038162231, f1 0.20510001480579376
+ep13_l0_test_time 2.215122658999917
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 13
+Test Epoch13 layer1 Acc 0.2056, AUC 0.7810295224189758, avg_entr 0.6128845810890198, f1 0.20559999346733093
+ep13_l1_test_time 2.201767951000079
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 13
+Test Epoch13 layer2 Acc 0.204, AUC 0.7716648578643799, avg_entr 0.6184203624725342, f1 0.20400001108646393
+ep13_l2_test_time 2.2379676270001028
+Test Epoch13 layer3 Acc 0.1299, AUC 0.752595841884613, avg_entr 0.5889720916748047, f1 0.1298999935388565
+ep13_l3_test_time 2.2655096639999783
+gc 0
+Train Epoch14 Acc 0.119155 (23831/200000), AUC 0.7314466834068298
+ep14_train_time 38.828678750999984
+Test Epoch14 layer0 Acc 0.2105, AUC 0.7919657826423645, avg_entr 0.4938999116420746, f1 0.21050000190734863
+ep14_l0_test_time 2.201978623999935
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 14
+Test Epoch14 layer1 Acc 0.2175, AUC 0.7884733080863953, avg_entr 0.4963187575340271, f1 0.2175000011920929
+ep14_l1_test_time 2.2176798619999545
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 14
+Test Epoch14 layer2 Acc 0.2104, AUC 0.7761911749839783, avg_entr 0.47728782892227173, f1 0.21040000021457672
+ep14_l2_test_time 2.237262729000008
+Test Epoch14 layer3 Acc 0.1371, AUC 0.756936252117157, avg_entr 0.43998241424560547, f1 0.1370999962091446
+ep14_l3_test_time 2.256601721000038
+gc 0
+Train Epoch15 Acc 0.135075 (27015/200000), AUC 0.7401691675186157
+ep15_train_time 38.73428138199995
+Test Epoch15 layer0 Acc 0.2179, AUC 0.7945799231529236, avg_entr 0.4036983847618103, f1 0.21789999306201935
+ep15_l0_test_time 2.2146916660000215
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 15
+Test Epoch15 layer1 Acc 0.2157, AUC 0.78836989402771, avg_entr 0.38672390580177307, f1 0.21570000052452087
+ep15_l1_test_time 2.176137302000029
+Test Epoch15 layer2 Acc 0.2102, AUC 0.7738679647445679, avg_entr 0.39649659395217896, f1 0.2102000117301941
+ep15_l2_test_time 2.2082647759999645
+Test Epoch15 layer3 Acc 0.1509, AUC 0.7604525685310364, avg_entr 0.3641916513442993, f1 0.1509000062942505
+ep15_l3_test_time 2.2316265870000507
+gc 0
+Train Epoch16 Acc 0.14845 (29690/200000), AUC 0.7459167242050171
+ep16_train_time 38.753612230000044
+Test Epoch16 layer0 Acc 0.2196, AUC 0.7924925088882446, avg_entr 0.32891595363616943, f1 0.21960000693798065
+ep16_l0_test_time 2.247789388000001
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 16
+Test Epoch16 layer1 Acc 0.2224, AUC 0.7840420603752136, avg_entr 0.325447142124176, f1 0.2223999798297882
+ep16_l1_test_time 2.1989598200000273
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 16
+Test Epoch16 layer2 Acc 0.2226, AUC 0.7710430026054382, avg_entr 0.3263837993144989, f1 0.22259999811649323
+ep16_l2_test_time 2.2730209939999213
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 16
+Test Epoch16 layer3 Acc 0.1663, AUC 0.7615626454353333, avg_entr 0.3055008351802826, f1 0.1662999987602234
+ep16_l3_test_time 2.2540266429999747
+gc 0
+Train Epoch17 Acc 0.16162 (32324/200000), AUC 0.7516329288482666
+ep17_train_time 38.917696761
+Test Epoch17 layer0 Acc 0.2215, AUC 0.7917224168777466, avg_entr 0.27384820580482483, f1 0.2214999943971634
+ep17_l0_test_time 2.203043545000014
+Test Epoch17 layer1 Acc 0.2258, AUC 0.7849825024604797, avg_entr 0.27795490622520447, f1 0.22579999268054962
+ep17_l1_test_time 2.215688759000045
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 17
+Test Epoch17 layer2 Acc 0.2339, AUC 0.7761686444282532, avg_entr 0.28866758942604065, f1 0.23389999568462372
+ep17_l2_test_time 2.2223853519999466
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 17
+Test Epoch17 layer3 Acc 0.1803, AUC 0.7651868462562561, avg_entr 0.2583915591239929, f1 0.18029999732971191
+ep17_l3_test_time 2.2416994019999947
+gc 0
+Train Epoch18 Acc 0.171725 (34345/200000), AUC 0.7540602087974548
+ep18_train_time 38.78684324199992
+Test Epoch18 layer0 Acc 0.2231, AUC 0.7913577556610107, avg_entr 0.22784049808979034, f1 0.2230999916791916
+ep18_l0_test_time 2.224678496000024
+Test Epoch18 layer1 Acc 0.2359, AUC 0.7870764136314392, avg_entr 0.22640115022659302, f1 0.23589999973773956
+ep18_l1_test_time 2.203405005000036
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 18
+Test Epoch18 layer2 Acc 0.2439, AUC 0.7787917852401733, avg_entr 0.2323015332221985, f1 0.24390000104904175
+ep18_l2_test_time 2.2281049620000886
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 18
+Test Epoch18 layer3 Acc 0.2042, AUC 0.7784723043441772, avg_entr 0.20309273898601532, f1 0.20419999957084656
+ep18_l3_test_time 2.2289773480000576
+gc 0
+Train Epoch19 Acc 0.18579 (37158/200000), AUC 0.7604541182518005
+ep19_train_time 38.722617979999995
+Test Epoch19 layer0 Acc 0.2295, AUC 0.7901474833488464, avg_entr 0.184689462184906, f1 0.22949999570846558
+ep19_l0_test_time 2.2474838450000334
+Test Epoch19 layer1 Acc 0.2456, AUC 0.792924702167511, avg_entr 0.19255921244621277, f1 0.24560000002384186
+ep19_l1_test_time 2.2053374049999093
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 19
+Test Epoch19 layer2 Acc 0.2519, AUC 0.7769966721534729, avg_entr 0.1954997032880783, f1 0.25189998745918274
+ep19_l2_test_time 2.2366928229999985
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 19
+Test Epoch19 layer3 Acc 0.2165, AUC 0.775583028793335, avg_entr 0.17371699213981628, f1 0.21649999916553497
+ep19_l3_test_time 2.2585274540000455
+gc 0
+Train Epoch20 Acc 0.201315 (40263/200000), AUC 0.7675184011459351
+ep20_train_time 38.882688488999975
+Test Epoch20 layer0 Acc 0.2403, AUC 0.7924799919128418, avg_entr 0.172049418091774, f1 0.2402999997138977
+ep20_l0_test_time 2.2109113089999255
+Test Epoch20 layer1 Acc 0.2506, AUC 0.7923621535301208, avg_entr 0.17533482611179352, f1 0.25060001015663147
+ep20_l1_test_time 2.214673969000046
+Test Epoch20 layer2 Acc 0.2568, AUC 0.7763746380805969, avg_entr 0.18604910373687744, f1 0.25679999589920044
+ep20_l2_test_time 2.2358480960000406
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 20
+Test Epoch20 layer3 Acc 0.217, AUC 0.771344006061554, avg_entr 0.1650734841823578, f1 0.21699999272823334
+ep20_l3_test_time 2.2160136440000997
+gc 0
+Train Epoch21 Acc 0.208455 (41691/200000), AUC 0.7677686214447021
+ep21_train_time 38.74134136800001
+Test Epoch21 layer0 Acc 0.2426, AUC 0.7942071557044983, avg_entr 0.1564023792743683, f1 0.2425999939441681
+ep21_l0_test_time 2.2182102589999886
+Test Epoch21 layer1 Acc 0.2554, AUC 0.7929267883300781, avg_entr 0.1591464877128601, f1 0.25540000200271606
+ep21_l1_test_time 2.2158138409999992
+Test Epoch21 layer2 Acc 0.2557, AUC 0.7756094932556152, avg_entr 0.173353374004364, f1 0.2556999921798706
+ep21_l2_test_time 2.275725125000008
+Test Epoch21 layer3 Acc 0.2232, AUC 0.7751543521881104, avg_entr 0.1468789428472519, f1 0.2231999933719635
+ep21_l3_test_time 2.2724542129999463
+gc 0
+Train Epoch22 Acc 0.218665 (43733/200000), AUC 0.7684663534164429
+ep22_train_time 38.71420598100008
+Test Epoch22 layer0 Acc 0.2465, AUC 0.7919390797615051, avg_entr 0.14223745465278625, f1 0.24650000035762787
+ep22_l0_test_time 2.20430863699994
+Test Epoch22 layer1 Acc 0.2571, AUC 0.7899277210235596, avg_entr 0.1516607105731964, f1 0.257099986076355
+ep22_l1_test_time 2.227449520999926
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 22
+Test Epoch22 layer2 Acc 0.2584, AUC 0.7708495855331421, avg_entr 0.1509082317352295, f1 0.25839999318122864
+ep22_l2_test_time 2.245252733999905
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 22
+Test Epoch22 layer3 Acc 0.2332, AUC 0.7716100811958313, avg_entr 0.13590176403522491, f1 0.23319999873638153
+ep22_l3_test_time 2.2886975389999407
+gc 0
+Train Epoch23 Acc 0.231605 (46321/200000), AUC 0.7775336503982544
+ep23_train_time 38.77361210900017
+Test Epoch23 layer0 Acc 0.2462, AUC 0.7939677238464355, avg_entr 0.13020746409893036, f1 0.24619999527931213
+ep23_l0_test_time 2.1968097209999087
+Test Epoch23 layer1 Acc 0.2593, AUC 0.7907666563987732, avg_entr 0.1352630853652954, f1 0.25929999351501465
+ep23_l1_test_time 2.237682986999971
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 23
+Test Epoch23 layer2 Acc 0.2733, AUC 0.7776641249656677, avg_entr 0.14963117241859436, f1 0.2732999920845032
+ep23_l2_test_time 2.2247984690000067
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 23
+Test Epoch23 layer3 Acc 0.2474, AUC 0.7838627696037292, avg_entr 0.1349787414073944, f1 0.24740000069141388
+ep23_l3_test_time 2.279848866999828
+gc 0
+Train Epoch24 Acc 0.243255 (48651/200000), AUC 0.7830812931060791
+ep24_train_time 38.77018043399994
+Test Epoch24 layer0 Acc 0.2493, AUC 0.7952792644500732, avg_entr 0.12462634593248367, f1 0.2493000030517578
+ep24_l0_test_time 2.2331145149998974
+Test Epoch24 layer1 Acc 0.2637, AUC 0.7945349216461182, avg_entr 0.1333940476179123, f1 0.263700008392334
+ep24_l1_test_time 2.206355991999999
+Test Epoch24 layer2 Acc 0.2749, AUC 0.7779473662376404, avg_entr 0.14415055513381958, f1 0.27489998936653137
+ep24_l2_test_time 2.2319765929998994
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 24
+Test Epoch24 layer3 Acc 0.254, AUC 0.7833054065704346, avg_entr 0.1276434361934662, f1 0.2540000081062317
+ep24_l3_test_time 2.2981306430001496
+gc 0
+Train Epoch25 Acc 0.249945 (49989/200000), AUC 0.7838627099990845
+ep25_train_time 38.72402502800014
+Test Epoch25 layer0 Acc 0.2528, AUC 0.7949820160865784, avg_entr 0.11859331279993057, f1 0.25279998779296875
+ep25_l0_test_time 2.2117091939999227
+Test Epoch25 layer1 Acc 0.2656, AUC 0.7942205667495728, avg_entr 0.12583890557289124, f1 0.2655999958515167
+ep25_l1_test_time 2.215861347999862
+Test Epoch25 layer2 Acc 0.2793, AUC 0.7770487070083618, avg_entr 0.13517190515995026, f1 0.2793000042438507
+ep25_l2_test_time 2.2322565080000913
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 25
+Test Epoch25 layer3 Acc 0.2614, AUC 0.783703088760376, avg_entr 0.12410768866539001, f1 0.2614000141620636
+ep25_l3_test_time 2.251990896000052
+gc 0
+Train Epoch26 Acc 0.25415 (50830/200000), AUC 0.7833068370819092
+ep26_train_time 38.85441114199989
+Test Epoch26 layer0 Acc 0.2539, AUC 0.7947486042976379, avg_entr 0.11216747015714645, f1 0.2538999915122986
+ep26_l0_test_time 2.222065573000009
+Test Epoch26 layer1 Acc 0.2671, AUC 0.7941657304763794, avg_entr 0.1185784563422203, f1 0.2671000063419342
+ep26_l1_test_time 2.1912977079998655
+Test Epoch26 layer2 Acc 0.2809, AUC 0.7746527194976807, avg_entr 0.1283280849456787, f1 0.2809000015258789
+ep26_l2_test_time 2.2220797780000794
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 26
+Test Epoch26 layer3 Acc 0.2617, AUC 0.7803519368171692, avg_entr 0.11635512858629227, f1 0.26170000433921814
+ep26_l3_test_time 2.2546742680001444
+gc 0
+Train Epoch27 Acc 0.261495 (52299/200000), AUC 0.7868316173553467
+ep27_train_time 38.67236783299995
+Test Epoch27 layer0 Acc 0.2554, AUC 0.7962427735328674, avg_entr 0.10311013460159302, f1 0.25540000200271606
+ep27_l0_test_time 2.2529631340000833
+Test Epoch27 layer1 Acc 0.2684, AUC 0.7944578528404236, avg_entr 0.1130111962556839, f1 0.26840001344680786
+ep27_l1_test_time 2.2292327540001224
+Test Epoch27 layer2 Acc 0.2838, AUC 0.7793290615081787, avg_entr 0.12604406476020813, f1 0.28380000591278076
+ep27_l2_test_time 2.243777431000126
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 27
+Test Epoch27 layer3 Acc 0.2647, AUC 0.7831145524978638, avg_entr 0.11183004081249237, f1 0.2646999955177307
+ep27_l3_test_time 2.2588635279998925
+gc 0
+Train Epoch28 Acc 0.268595 (53719/200000), AUC 0.7896509766578674
+ep28_train_time 38.92584123300003
+Test Epoch28 layer0 Acc 0.2543, AUC 0.7953965067863464, avg_entr 0.09165605157613754, f1 0.25429999828338623
+ep28_l0_test_time 2.200742128999991
+Test Epoch28 layer1 Acc 0.2661, AUC 0.7947611212730408, avg_entr 0.10005899518728256, f1 0.2660999894142151
+ep28_l1_test_time 2.1959933000000547
+Test Epoch28 layer2 Acc 0.2796, AUC 0.7737196087837219, avg_entr 0.11186900734901428, f1 0.27959999442100525
+ep28_l2_test_time 2.2270260110001345
+Test Epoch28 layer3 Acc 0.2683, AUC 0.780684232711792, avg_entr 0.09923757612705231, f1 0.26829999685287476
+ep28_l3_test_time 2.2409665110001242
+gc 0
+Train Epoch29 Acc 0.27156 (54312/200000), AUC 0.7900717258453369
+ep29_train_time 38.85185056600017
+Test Epoch29 layer0 Acc 0.2568, AUC 0.7962831854820251, avg_entr 0.08719485253095627, f1 0.25679999589920044
+ep29_l0_test_time 2.233567897000057
+Test Epoch29 layer1 Acc 0.2687, AUC 0.7957909107208252, avg_entr 0.0948411375284195, f1 0.2687000036239624
+ep29_l1_test_time 2.286354807999942
+Test Epoch29 layer2 Acc 0.2836, AUC 0.776889979839325, avg_entr 0.10788120329380035, f1 0.28360000252723694
+ep29_l2_test_time 2.256424086999914
+Test Epoch29 layer3 Acc 0.2735, AUC 0.7867770195007324, avg_entr 0.09728863835334778, f1 0.273499995470047
+ep29_l3_test_time 2.247083712999938
+gc 0
+Train Epoch30 Acc 0.27398 (54796/200000), AUC 0.7904399037361145
+ep30_train_time 38.78187307600001
+Test Epoch30 layer0 Acc 0.2551, AUC 0.7959045171737671, avg_entr 0.08589711040258408, f1 0.2551000118255615
+ep30_l0_test_time 2.2383687439998994
+Test Epoch30 layer1 Acc 0.2712, AUC 0.7946047186851501, avg_entr 0.09077868610620499, f1 0.2712000012397766
+ep30_l1_test_time 2.2196843730000637
+Test Epoch30 layer2 Acc 0.2864, AUC 0.7763916850090027, avg_entr 0.10269705951213837, f1 0.2863999903202057
+ep30_l2_test_time 2.2472638510000706
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 30
+Test Epoch30 layer3 Acc 0.2739, AUC 0.7841371297836304, avg_entr 0.09351395070552826, f1 0.27390000224113464
+ep30_l3_test_time 2.229938849000064
+gc 0
+Train Epoch31 Acc 0.27683 (55366/200000), AUC 0.7907922267913818
+ep31_train_time 38.61535520999996
+Test Epoch31 layer0 Acc 0.2595, AUC 0.7962949872016907, avg_entr 0.07409849017858505, f1 0.25949999690055847
+ep31_l0_test_time 2.218560170000046
+Test Epoch31 layer1 Acc 0.2704, AUC 0.794614315032959, avg_entr 0.08128134161233902, f1 0.2703999876976013
+ep31_l1_test_time 2.2039398929998697
+Test Epoch31 layer2 Acc 0.2852, AUC 0.7768132090568542, avg_entr 0.0946362093091011, f1 0.28519999980926514
+ep31_l2_test_time 2.242680948000043
+Test Epoch31 layer3 Acc 0.2807, AUC 0.7849693894386292, avg_entr 0.0836324617266655, f1 0.2806999981403351
+ep31_l3_test_time 2.2522024229999715
+gc 0
+Train Epoch32 Acc 0.283245 (56649/200000), AUC 0.7934813499450684
+ep32_train_time 38.60557699300011
+Test Epoch32 layer0 Acc 0.259, AUC 0.7969766855239868, avg_entr 0.0739857479929924, f1 0.2590000033378601
+ep32_l0_test_time 2.202443629000072
+Test Epoch32 layer1 Acc 0.2726, AUC 0.7948622107505798, avg_entr 0.08067227900028229, f1 0.272599995136261
+ep32_l1_test_time 2.2093981240000176
+Test Epoch32 layer2 Acc 0.2914, AUC 0.7793344855308533, avg_entr 0.09220176190137863, f1 0.2913999855518341
+ep32_l2_test_time 2.2650408810000044
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 32
+Test Epoch32 layer3 Acc 0.2838, AUC 0.7865628004074097, avg_entr 0.08430459350347519, f1 0.28380000591278076
+ep32_l3_test_time 2.2252948420000394
+gc 0
+Train Epoch33 Acc 0.2857 (57140/200000), AUC 0.7933231592178345
+ep33_train_time 38.88153673499983
+Test Epoch33 layer0 Acc 0.2609, AUC 0.7967654466629028, avg_entr 0.07153232395648956, f1 0.26089999079704285
+ep33_l0_test_time 2.277168113000016
+Test Epoch33 layer1 Acc 0.2738, AUC 0.7943494915962219, avg_entr 0.08051808178424835, f1 0.27379998564720154
+ep33_l1_test_time 2.220554588999903
+Test Epoch33 layer2 Acc 0.291, AUC 0.778495192527771, avg_entr 0.09271727502346039, f1 0.29100000858306885
+ep33_l2_test_time 2.2388906080000197
+Test Epoch33 layer3 Acc 0.2835, AUC 0.7843155860900879, avg_entr 0.08292533457279205, f1 0.28349998593330383
+ep33_l3_test_time 2.2455079300000307
+gc 0
+Train Epoch34 Acc 0.287915 (57583/200000), AUC 0.7948150634765625
+ep34_train_time 38.93681803499999
+Test Epoch34 layer0 Acc 0.2593, AUC 0.7962799072265625, avg_entr 0.06708809733390808, f1 0.25929999351501465
+ep34_l0_test_time 2.2092866079999567
+Test Epoch34 layer1 Acc 0.2743, AUC 0.7948486804962158, avg_entr 0.07452739775180817, f1 0.2743000090122223
+ep34_l1_test_time 2.198384274999853
+Test Epoch34 layer2 Acc 0.2915, AUC 0.7788785696029663, avg_entr 0.08552204072475433, f1 0.2915000021457672
+ep34_l2_test_time 2.23017804899996
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 34
+Test Epoch34 layer3 Acc 0.2811, AUC 0.7847146391868591, avg_entr 0.07646303623914719, f1 0.28110000491142273
+ep34_l3_test_time 2.2287570739999865
+gc 0
+Train Epoch35 Acc 0.290375 (58075/200000), AUC 0.7951061725616455
+ep35_train_time 38.89905265099992
+Test Epoch35 layer0 Acc 0.2606, AUC 0.7967739105224609, avg_entr 0.06513624638319016, f1 0.2606000006198883
+ep35_l0_test_time 2.2781716879999294
+Test Epoch35 layer1 Acc 0.2776, AUC 0.7946251034736633, avg_entr 0.07212477922439575, f1 0.2775999903678894
+ep35_l1_test_time 2.202170195000008
+Test Epoch35 layer2 Acc 0.2898, AUC 0.7775543928146362, avg_entr 0.0822189599275589, f1 0.2897999882698059
+ep35_l2_test_time 2.2241091289999986
+Test Epoch35 layer3 Acc 0.2865, AUC 0.7841243743896484, avg_entr 0.07521050423383713, f1 0.2865000069141388
+ep35_l3_test_time 2.2455353850000392
+gc 0
+Train Epoch36 Acc 0.292745 (58549/200000), AUC 0.7954431176185608
+ep36_train_time 38.84374690100003
+Test Epoch36 layer0 Acc 0.2624, AUC 0.7966868877410889, avg_entr 0.06037861853837967, f1 0.2624000012874603
+ep36_l0_test_time 2.214698394999914
+Test Epoch36 layer1 Acc 0.2765, AUC 0.7951875329017639, avg_entr 0.06888329982757568, f1 0.27649998664855957
+ep36_l1_test_time 2.20357530199999
+Test Epoch36 layer2 Acc 0.2919, AUC 0.7785802483558655, avg_entr 0.08053286373615265, f1 0.29190000891685486
+ep36_l2_test_time 2.217416854000021
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 36
+Test Epoch36 layer3 Acc 0.2875, AUC 0.7863761186599731, avg_entr 0.07290082424879074, f1 0.2874999940395355
+ep36_l3_test_time 2.2502644189999046
+gc 0
+Train Epoch37 Acc 0.29278 (58556/200000), AUC 0.7959240674972534
+ep37_train_time 38.82409948399982
+Test Epoch37 layer0 Acc 0.261, AUC 0.7972640991210938, avg_entr 0.05897194892168045, f1 0.26100000739097595
+ep37_l0_test_time 2.2054442500000278
+Test Epoch37 layer1 Acc 0.2778, AUC 0.7959166169166565, avg_entr 0.06723552942276001, f1 0.2777999937534332
+ep37_l1_test_time 2.2263764649999302
+Test Epoch37 layer2 Acc 0.2932, AUC 0.7788951396942139, avg_entr 0.07794935256242752, f1 0.29319998621940613
+ep37_l2_test_time 2.2284254650001003
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 37
+Test Epoch37 layer3 Acc 0.2867, AUC 0.7864235639572144, avg_entr 0.07044366747140884, f1 0.2867000102996826
+ep37_l3_test_time 2.2261449110001195
+gc 0
+Train Epoch38 Acc 0.2954 (59080/200000), AUC 0.796703577041626
+ep38_train_time 38.73311763699985
+Test Epoch38 layer0 Acc 0.2644, AUC 0.7971932888031006, avg_entr 0.05709899961948395, f1 0.26440000534057617
+ep38_l0_test_time 2.203394062000143
+Test Epoch38 layer1 Acc 0.2797, AUC 0.7953341603279114, avg_entr 0.06389938294887543, f1 0.27970001101493835
+ep38_l1_test_time 2.2061414380000315
+Test Epoch38 layer2 Acc 0.293, AUC 0.7786187529563904, avg_entr 0.07524937391281128, f1 0.2930000126361847
+ep38_l2_test_time 2.2298021439999047
+Test Epoch38 layer3 Acc 0.2876, AUC 0.7861210703849792, avg_entr 0.06654751300811768, f1 0.28760001063346863
+ep38_l3_test_time 2.232366523999872
+gc 0
+Train Epoch39 Acc 0.29609 (59218/200000), AUC 0.7969717383384705
+ep39_train_time 38.87402120999991
+Test Epoch39 layer0 Acc 0.2608, AUC 0.7973319292068481, avg_entr 0.05615679919719696, f1 0.26080000400543213
+ep39_l0_test_time 2.2235952769999585
+Test Epoch39 layer1 Acc 0.2791, AUC 0.7955540418624878, avg_entr 0.06487307697534561, f1 0.2791000008583069
+ep39_l1_test_time 2.1975494470000285
+Test Epoch39 layer2 Acc 0.2931, AUC 0.7782132625579834, avg_entr 0.07576826214790344, f1 0.2930999994277954
+ep39_l2_test_time 2.2631582669998807
+Test Epoch39 layer3 Acc 0.2896, AUC 0.7867347002029419, avg_entr 0.0688704252243042, f1 0.2896000146865845
+ep39_l3_test_time 2.3277400760000546
+gc 0
+Train Epoch40 Acc 0.298015 (59603/200000), AUC 0.798281192779541
+ep40_train_time 38.97959270000001
+Test Epoch40 layer0 Acc 0.2654, AUC 0.7967619299888611, avg_entr 0.05458536371588707, f1 0.2653999924659729
+ep40_l0_test_time 2.203254068999968
+Test Epoch40 layer1 Acc 0.2784, AUC 0.7943020462989807, avg_entr 0.0627155601978302, f1 0.2784000039100647
+ep40_l1_test_time 2.2248481450001236
+Test Epoch40 layer2 Acc 0.2944, AUC 0.7786984443664551, avg_entr 0.07163110375404358, f1 0.29440000653266907
+ep40_l2_test_time 2.242509028000086
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 40
+Test Epoch40 layer3 Acc 0.2876, AUC 0.7863349914550781, avg_entr 0.06620648503303528, f1 0.28760001063346863
+ep40_l3_test_time 2.259697784000082
+gc 0
+Train Epoch41 Acc 0.29868 (59736/200000), AUC 0.7970460653305054
+ep41_train_time 38.88323273300011
+Test Epoch41 layer0 Acc 0.2632, AUC 0.7970321178436279, avg_entr 0.05131957307457924, f1 0.2632000148296356
+ep41_l0_test_time 2.2529608499999085
+Test Epoch41 layer1 Acc 0.2798, AUC 0.7953335642814636, avg_entr 0.060130950063467026, f1 0.2797999978065491
+ep41_l1_test_time 2.2126793369998268
+Test Epoch41 layer2 Acc 0.291, AUC 0.777916669845581, avg_entr 0.07033795863389969, f1 0.29100000858306885
+ep41_l2_test_time 2.227978875999952
+Test Epoch41 layer3 Acc 0.2912, AUC 0.7859384417533875, avg_entr 0.06316916644573212, f1 0.29120001196861267
+ep41_l3_test_time 2.2422117599999183
+gc 0
+Train Epoch42 Acc 0.300705 (60141/200000), AUC 0.7982355356216431
+ep42_train_time 38.584403074999955
+Test Epoch42 layer0 Acc 0.2624, AUC 0.7974052429199219, avg_entr 0.05174820125102997, f1 0.2624000012874603
+ep42_l0_test_time 2.221139473999756
+Test Epoch42 layer1 Acc 0.2813, AUC 0.7947998642921448, avg_entr 0.06018385663628578, f1 0.28130000829696655
+ep42_l1_test_time 2.2070760280003014
+Test Epoch42 layer2 Acc 0.2922, AUC 0.7781205177307129, avg_entr 0.06886357069015503, f1 0.2921999990940094
+ep42_l2_test_time 2.2579697890000716
+Test Epoch42 layer3 Acc 0.2911, AUC 0.785611629486084, avg_entr 0.06322657316923141, f1 0.29109999537467957
+ep42_l3_test_time 2.2565705580000213
+gc 0
+Train Epoch43 Acc 0.30139 (60278/200000), AUC 0.7978508472442627
+ep43_train_time 38.904625936999764
+Test Epoch43 layer0 Acc 0.2629, AUC 0.7979037761688232, avg_entr 0.05032006651163101, f1 0.2628999948501587
+ep43_l0_test_time 2.236042801000167
+Test Epoch43 layer1 Acc 0.2797, AUC 0.7953273057937622, avg_entr 0.05995580926537514, f1 0.27970001101493835
+ep43_l1_test_time 2.20616894099976
+Test Epoch43 layer2 Acc 0.2948, AUC 0.7784128785133362, avg_entr 0.06983047723770142, f1 0.2948000133037567
+ep43_l2_test_time 2.255555127000207
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 43
+Test Epoch43 layer3 Acc 0.2902, AUC 0.7859202027320862, avg_entr 0.0626053661108017, f1 0.29019999504089355
+ep43_l3_test_time 2.2269112850003694
+gc 0
+Train Epoch44 Acc 0.301245 (60249/200000), AUC 0.7982539534568787
+ep44_train_time 38.90647440799967
+Test Epoch44 layer0 Acc 0.2626, AUC 0.7975713610649109, avg_entr 0.049020834267139435, f1 0.26260000467300415
+ep44_l0_test_time 2.2113976310001817
+Test Epoch44 layer1 Acc 0.2803, AUC 0.7952099442481995, avg_entr 0.05745234340429306, f1 0.28029999136924744
+ep44_l1_test_time 2.2225535459997445
+Test Epoch44 layer2 Acc 0.2952, AUC 0.7782549262046814, avg_entr 0.06713443994522095, f1 0.295199990272522
+ep44_l2_test_time 2.2275021400000696
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 44
+Test Epoch44 layer3 Acc 0.2917, AUC 0.7860456705093384, avg_entr 0.06083309277892113, f1 0.29170000553131104
+ep44_l3_test_time 2.235314316000313
+gc 0
+Train Epoch45 Acc 0.30192 (60384/200000), AUC 0.7979603409767151
+ep45_train_time 38.90790578999986
+Test Epoch45 layer0 Acc 0.2635, AUC 0.7975567579269409, avg_entr 0.04802970215678215, f1 0.26350000500679016
+ep45_l0_test_time 2.2601237710000532
+Test Epoch45 layer1 Acc 0.2812, AUC 0.7955753803253174, avg_entr 0.05642547458410263, f1 0.28119999170303345
+ep45_l1_test_time 2.2407497320000402
+Test Epoch45 layer2 Acc 0.2954, AUC 0.7779361605644226, avg_entr 0.06611398607492447, f1 0.2953999936580658
+ep45_l2_test_time 2.2790992380000716
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 45
+Test Epoch45 layer3 Acc 0.2917, AUC 0.7858699560165405, avg_entr 0.05954312905669212, f1 0.29170000553131104
+ep45_l3_test_time 2.255448878000152
+gc 0
+Train Epoch46 Acc 0.30257 (60514/200000), AUC 0.797852635383606
+ep46_train_time 38.822224535999794
+Test Epoch46 layer0 Acc 0.2636, AUC 0.7975635528564453, avg_entr 0.04675577953457832, f1 0.2635999917984009
+ep46_l0_test_time 2.2168604449998384
+Test Epoch46 layer1 Acc 0.2816, AUC 0.7956595420837402, avg_entr 0.05668939650058746, f1 0.2815999984741211
+ep46_l1_test_time 2.22119743400026
+Test Epoch46 layer2 Acc 0.2947, AUC 0.7778794765472412, avg_entr 0.0650729089975357, f1 0.2946999967098236
+ep46_l2_test_time 2.2346790560000045
+Test Epoch46 layer3 Acc 0.2922, AUC 0.7857827544212341, avg_entr 0.058679912239313126, f1 0.2921999990940094
+ep46_l3_test_time 2.270771287000116
+gc 0
+Train Epoch47 Acc 0.30219 (60438/200000), AUC 0.7983025908470154
+ep47_train_time 38.82273377199999
+Test Epoch47 layer0 Acc 0.2634, AUC 0.7973965406417847, avg_entr 0.04638058319687843, f1 0.26339998841285706
+ep47_l0_test_time 2.2657280120001815
+Test Epoch47 layer1 Acc 0.2811, AUC 0.7957785129547119, avg_entr 0.05359907075762749, f1 0.28110000491142273
+ep47_l1_test_time 2.2102967810001246
+Test Epoch47 layer2 Acc 0.2939, AUC 0.7781113982200623, avg_entr 0.0628664493560791, f1 0.2939000129699707
+ep47_l2_test_time 2.250957171000209
+Test Epoch47 layer3 Acc 0.2919, AUC 0.7854821681976318, avg_entr 0.05659417062997818, f1 0.29190000891685486
+ep47_l3_test_time 2.293112605999795
+gc 0
+Train Epoch48 Acc 0.303535 (60707/200000), AUC 0.7984918355941772
+ep48_train_time 38.9166206939999
+Test Epoch48 layer0 Acc 0.264, AUC 0.7974911332130432, avg_entr 0.04486173763871193, f1 0.2639999985694885
+ep48_l0_test_time 2.2086207840002317
+Test Epoch48 layer1 Acc 0.2819, AUC 0.7959504723548889, avg_entr 0.052665531635284424, f1 0.28189998865127563
+ep48_l1_test_time 2.2689289969998754
+Test Epoch48 layer2 Acc 0.2949, AUC 0.7780271172523499, avg_entr 0.06176405027508736, f1 0.29490000009536743
+ep48_l2_test_time 2.2396383459999925
+Test Epoch48 layer3 Acc 0.2937, AUC 0.7855859994888306, avg_entr 0.05600111559033394, f1 0.2937000095844269
+ep48_l3_test_time 2.263635279999562
+gc 0
+Train Epoch49 Acc 0.303365 (60673/200000), AUC 0.7984791398048401
+ep49_train_time 38.66684694500009
+Test Epoch49 layer0 Acc 0.264, AUC 0.7972583770751953, avg_entr 0.04465430974960327, f1 0.2639999985694885
+ep49_l0_test_time 2.2211800219997713
+Test Epoch49 layer1 Acc 0.2818, AUC 0.7955514788627625, avg_entr 0.052903912961483, f1 0.2818000018596649
+ep49_l1_test_time 2.2018326809998143
+Test Epoch49 layer2 Acc 0.2933, AUC 0.7780279517173767, avg_entr 0.061284471303224564, f1 0.29330000281333923
+ep49_l2_test_time 2.255175662000056
+Test Epoch49 layer3 Acc 0.2915, AUC 0.7852163910865784, avg_entr 0.05514255538582802, f1 0.2915000021457672
+ep49_l3_test_time 2.273943046000113
+gc 0
+Train Epoch50 Acc 0.302945 (60589/200000), AUC 0.7990803718566895
+ep50_train_time 38.9089886820002
+Test Epoch50 layer0 Acc 0.2639, AUC 0.797645628452301, avg_entr 0.04365275427699089, f1 0.2639000117778778
+ep50_l0_test_time 2.215858120000121
+Test Epoch50 layer1 Acc 0.2827, AUC 0.7959581613540649, avg_entr 0.052629027515649796, f1 0.2827000021934509
+ep50_l1_test_time 2.2278022149998833
+Test Epoch50 layer2 Acc 0.2942, AUC 0.7780219316482544, avg_entr 0.061061687767505646, f1 0.29420000314712524
+ep50_l2_test_time 2.2448912929999096
+Test Epoch50 layer3 Acc 0.2935, AUC 0.785550057888031, avg_entr 0.05538540706038475, f1 0.29350000619888306
+ep50_l3_test_time 2.2890080709998983
+gc 0
+Train Epoch51 Acc 0.303185 (60637/200000), AUC 0.7984933257102966
+ep51_train_time 38.93423422400019
+Test Epoch51 layer0 Acc 0.2644, AUC 0.7976106405258179, avg_entr 0.043536003679037094, f1 0.26440000534057617
+ep51_l0_test_time 2.2064176230001067
+Test Epoch51 layer1 Acc 0.2833, AUC 0.79591965675354, avg_entr 0.05163871496915817, f1 0.2833000123500824
+ep51_l1_test_time 2.2385158020001654
+Test Epoch51 layer2 Acc 0.2944, AUC 0.7779383063316345, avg_entr 0.060197845101356506, f1 0.29440000653266907
+ep51_l2_test_time 2.263867243000277
+Test Epoch51 layer3 Acc 0.2915, AUC 0.7855047583580017, avg_entr 0.054155487567186356, f1 0.2915000021457672
+ep51_l3_test_time 2.2492026609997993
+gc 0
+Train Epoch52 Acc 0.30428 (60856/200000), AUC 0.7990024089813232
+ep52_train_time 38.81147839000005
+Test Epoch52 layer0 Acc 0.2635, AUC 0.7975318431854248, avg_entr 0.043144792318344116, f1 0.26350000500679016
+ep52_l0_test_time 2.204457640000328
+Test Epoch52 layer1 Acc 0.2822, AUC 0.7955888509750366, avg_entr 0.05154380574822426, f1 0.28220000863075256
+ep52_l1_test_time 2.2130093609998767
+Test Epoch52 layer2 Acc 0.2944, AUC 0.7776626348495483, avg_entr 0.05988764017820358, f1 0.29440000653266907
+ep52_l2_test_time 2.27398292099997
+Test Epoch52 layer3 Acc 0.2933, AUC 0.7853620052337646, avg_entr 0.05398837849497795, f1 0.29330000281333923
+ep52_l3_test_time 2.2623203309999553
+gc 0
+Train Epoch53 Acc 0.3041 (60820/200000), AUC 0.7986013293266296
+ep53_train_time 38.795532172000094
+Test Epoch53 layer0 Acc 0.2634, AUC 0.7975805401802063, avg_entr 0.04282420128583908, f1 0.26339998841285706
+ep53_l0_test_time 2.2224818929998946
+Test Epoch53 layer1 Acc 0.2822, AUC 0.7956395745277405, avg_entr 0.0512009933590889, f1 0.28220000863075256
+ep53_l1_test_time 2.2505060820003564
+Test Epoch53 layer2 Acc 0.2938, AUC 0.7780405282974243, avg_entr 0.05964076519012451, f1 0.2937999963760376
+ep53_l2_test_time 2.2805163650000395
+Test Epoch53 layer3 Acc 0.2926, AUC 0.7854526042938232, avg_entr 0.05347862467169762, f1 0.29260000586509705
+ep53_l3_test_time 2.2701213200002712
+gc 0
+Train Epoch54 Acc 0.303815 (60763/200000), AUC 0.7984917163848877
+ep54_train_time 39.038642270999844
+Test Epoch54 layer0 Acc 0.2642, AUC 0.797655463218689, avg_entr 0.04209783300757408, f1 0.26420000195503235
+ep54_l0_test_time 2.2178882749999502
+Test Epoch54 layer1 Acc 0.2824, AUC 0.795830249786377, avg_entr 0.050825733691453934, f1 0.2824000120162964
+ep54_l1_test_time 2.2272464249999757
+Test Epoch54 layer2 Acc 0.2958, AUC 0.7780368328094482, avg_entr 0.05931112542748451, f1 0.29580000042915344
+ep54_l2_test_time 2.302684474000216
+Save ckpt to ckpt/tinyImageNet_CNN_AL_l4_strong//tinyImageNet_CNN_AL_l4.pt  ,ep 54
+Test Epoch54 layer3 Acc 0.2922, AUC 0.7857012152671814, avg_entr 0.05309946462512016, f1 0.2921999990940094
+ep54_l3_test_time 2.2338932430002387
+gc 0
+Train Epoch55 Acc 0.305595 (61119/200000), AUC 0.7990750670433044
+ep55_train_time 38.801063354000235
+Test Epoch55 layer0 Acc 0.2633, AUC 0.7975926399230957, avg_entr 0.04236907884478569, f1 0.26330000162124634
+ep55_l0_test_time 2.2510472789999767
+Test Epoch55 layer1 Acc 0.283, AUC 0.7957733869552612, avg_entr 0.05034327879548073, f1 0.28299999237060547
+ep55_l1_test_time 2.2071428089998335
+Test Epoch55 layer2 Acc 0.294, AUC 0.7778653502464294, avg_entr 0.05883580818772316, f1 0.2939999997615814
+ep55_l2_test_time 2.2296878489996743
+Test Epoch55 layer3 Acc 0.2919, AUC 0.7853856086730957, avg_entr 0.052936676889657974, f1 0.29190000891685486
+ep55_l3_test_time 2.2599810709998565
+gc 0
+Train Epoch56 Acc 0.30425 (60850/200000), AUC 0.7994608879089355
+ep56_train_time 38.84658881700034
+Test Epoch56 layer0 Acc 0.2632, AUC 0.7975051999092102, avg_entr 0.04168504476547241, f1 0.2632000148296356
+ep56_l0_test_time 2.2136395489997085
+Test Epoch56 layer1 Acc 0.2833, AUC 0.7955909967422485, avg_entr 0.05002036318182945, f1 0.2833000123500824
+ep56_l1_test_time 2.2350247439999293
+Test Epoch56 layer2 Acc 0.294, AUC 0.7778976559638977, avg_entr 0.058585088700056076, f1 0.2939999997615814
+ep56_l2_test_time 2.230598084000121
+Test Epoch56 layer3 Acc 0.2935, AUC 0.7854617238044739, avg_entr 0.052866820245981216, f1 0.29350000619888306
+ep56_l3_test_time 2.2456948649996775
+gc 0
+Train Epoch57 Acc 0.30374 (60748/200000), AUC 0.7990661859512329
+ep57_train_time 38.87186184000029
+Test Epoch57 layer0 Acc 0.2642, AUC 0.7974668741226196, avg_entr 0.04156724736094475, f1 0.26420000195503235
+ep57_l0_test_time 2.2095129140002427
+Test Epoch57 layer1 Acc 0.2829, AUC 0.7956112623214722, avg_entr 0.049985241144895554, f1 0.28290000557899475
+ep57_l1_test_time 2.2209736079998947
+Test Epoch57 layer2 Acc 0.2946, AUC 0.7779461741447449, avg_entr 0.05844561755657196, f1 0.2946000099182129
+ep57_l2_test_time 2.238651260000097
+Test Epoch57 layer3 Acc 0.2937, AUC 0.7854364514350891, avg_entr 0.05276283994317055, f1 0.2937000095844269
+ep57_l3_test_time 2.272325637999984
+gc 0
+Train Epoch58 Acc 0.30368 (60736/200000), AUC 0.7987073659896851
+ep58_train_time 38.770446970000194
+Test Epoch58 layer0 Acc 0.264, AUC 0.7975113391876221, avg_entr 0.041378170251846313, f1 0.2639999985694885
+ep58_l0_test_time 2.2174460940000245
+Test Epoch58 layer1 Acc 0.2835, AUC 0.7957390546798706, avg_entr 0.049771856516599655, f1 0.28349998593330383
+ep58_l1_test_time 2.2210036110000146
+Test Epoch58 layer2 Acc 0.2942, AUC 0.7779344916343689, avg_entr 0.05832396075129509, f1 0.29420000314712524
+ep58_l2_test_time 2.2574993779999204
+Test Epoch58 layer3 Acc 0.2928, AUC 0.7854466438293457, avg_entr 0.05240064859390259, f1 0.29280000925064087
+ep58_l3_test_time 2.259369605000302
+gc 0
+Train Epoch59 Acc 0.303805 (60761/200000), AUC 0.7992727756500244
+ep59_train_time 38.830447517000266
+Test Epoch59 layer0 Acc 0.2638, AUC 0.7975227236747742, avg_entr 0.041218314319849014, f1 0.2637999951839447
+ep59_l0_test_time 2.2025293169999713
+Test Epoch59 layer1 Acc 0.2827, AUC 0.795735239982605, avg_entr 0.049511391669511795, f1 0.2827000021934509
+ep59_l1_test_time 2.201068202999977
+Test Epoch59 layer2 Acc 0.2944, AUC 0.7779364585876465, avg_entr 0.058161549270153046, f1 0.29440000653266907
+ep59_l2_test_time 2.2308184280000205
+Test Epoch59 layer3 Acc 0.2929, AUC 0.7854300737380981, avg_entr 0.05216832458972931, f1 0.2928999960422516
+ep59_l3_test_time 2.2236380509998526
+gc 0
+Train Epoch60 Acc 0.30477 (60954/200000), AUC 0.7988248467445374
+ep60_train_time 38.762553687000036
+Test Epoch60 layer0 Acc 0.2636, AUC 0.7975674271583557, avg_entr 0.04129438474774361, f1 0.2635999917984009
+ep60_l0_test_time 2.2081209259999923
+Test Epoch60 layer1 Acc 0.2828, AUC 0.7956368923187256, avg_entr 0.049435365945100784, f1 0.28279998898506165
+ep60_l1_test_time 2.2041854300000523
+Test Epoch60 layer2 Acc 0.2943, AUC 0.7779379487037659, avg_entr 0.05802113562822342, f1 0.29429998993873596
+ep60_l2_test_time 2.2314385069998934
+Test Epoch60 layer3 Acc 0.2931, AUC 0.7854488492012024, avg_entr 0.05222851410508156, f1 0.2930999994277954
+ep60_l3_test_time 2.294334013000025
+gc 0
+Train Epoch61 Acc 0.304155 (60831/200000), AUC 0.7987738251686096
+ep61_train_time 38.7340313640002
+Test Epoch61 layer0 Acc 0.2636, AUC 0.7975392937660217, avg_entr 0.041185252368450165, f1 0.2635999917984009
+ep61_l0_test_time 2.2296879270002137
+Test Epoch61 layer1 Acc 0.2825, AUC 0.7956655025482178, avg_entr 0.04932611808180809, f1 0.2824999988079071
+ep61_l1_test_time 2.2029701179999392
+Test Epoch61 layer2 Acc 0.2947, AUC 0.7780219316482544, avg_entr 0.05788157507777214, f1 0.2946999967098236
+ep61_l2_test_time 2.2326110560002235
+Test Epoch61 layer3 Acc 0.2933, AUC 0.7854538559913635, avg_entr 0.052061326801776886, f1 0.29330000281333923
+ep61_l3_test_time 2.2370687910001834
+gc 0
+Train Epoch62 Acc 0.304375 (60875/200000), AUC 0.7989082932472229
+ep62_train_time 38.80413136600009
+Test Epoch62 layer0 Acc 0.2636, AUC 0.7975437045097351, avg_entr 0.04109488055109978, f1 0.2635999917984009
+ep62_l0_test_time 2.217192133000026
+Test Epoch62 layer1 Acc 0.2827, AUC 0.7956815958023071, avg_entr 0.04941048473119736, f1 0.2827000021934509
+ep62_l1_test_time 2.2141696909998245
+Test Epoch62 layer2 Acc 0.295, AUC 0.7780813574790955, avg_entr 0.05786561965942383, f1 0.29499998688697815
+ep62_l2_test_time 2.2429553609999857
+Test Epoch62 layer3 Acc 0.2929, AUC 0.7854812145233154, avg_entr 0.05197490379214287, f1 0.2928999960422516
+ep62_l3_test_time 2.31457833200011
+gc 0
+Train Epoch63 Acc 0.30472 (60944/200000), AUC 0.7987244129180908
+ep63_train_time 38.86399849400004
+Test Epoch63 layer0 Acc 0.2635, AUC 0.7974804639816284, avg_entr 0.04102234169840813, f1 0.26350000500679016
+ep63_l0_test_time 2.2469609709996803
+Test Epoch63 layer1 Acc 0.2829, AUC 0.795697033405304, avg_entr 0.04920225962996483, f1 0.28290000557899475
+ep63_l1_test_time 2.224963950000074
+Test Epoch63 layer2 Acc 0.2947, AUC 0.7780039310455322, avg_entr 0.05770013853907585, f1 0.2946999967098236
+ep63_l2_test_time 2.22506606800016
+Test Epoch63 layer3 Acc 0.294, AUC 0.7854170799255371, avg_entr 0.051835253834724426, f1 0.2939999997615814
+ep63_l3_test_time 2.2526675439999053
+gc 0
+Train Epoch64 Acc 0.30417 (60834/200000), AUC 0.7990128397941589
+ep64_train_time 38.88414714800001
+Test Epoch64 layer0 Acc 0.2639, AUC 0.7975088357925415, avg_entr 0.04103555157780647, f1 0.2639000117778778
+ep64_l0_test_time 2.2135048290001578
+Test Epoch64 layer1 Acc 0.2828, AUC 0.7956995964050293, avg_entr 0.049316585063934326, f1 0.28279998898506165
+ep64_l1_test_time 2.203228156000023
+Test Epoch64 layer2 Acc 0.2942, AUC 0.7779778838157654, avg_entr 0.05779748409986496, f1 0.29420000314712524
+ep64_l2_test_time 2.224916060999931
+Test Epoch64 layer3 Acc 0.2931, AUC 0.7854275703430176, avg_entr 0.051926080137491226, f1 0.2930999994277954
+ep64_l3_test_time 2.2491545230000156
+gc 0
+Train Epoch65 Acc 0.30497 (60994/200000), AUC 0.7987280488014221
+ep65_train_time 38.80492103400002
+Test Epoch65 layer0 Acc 0.2641, AUC 0.7975117564201355, avg_entr 0.04108637571334839, f1 0.26409998536109924
+ep65_l0_test_time 2.212649894999686
+Test Epoch65 layer1 Acc 0.2831, AUC 0.7956584095954895, avg_entr 0.04934875667095184, f1 0.2831000089645386
+ep65_l1_test_time 2.2148777829997925
+Test Epoch65 layer2 Acc 0.2946, AUC 0.7779498100280762, avg_entr 0.057815179228782654, f1 0.2946000099182129
+ep65_l2_test_time 2.2386387110000214
+Test Epoch65 layer3 Acc 0.2929, AUC 0.7853917479515076, avg_entr 0.051846038550138474, f1 0.2928999960422516
+ep65_l3_test_time 2.2545769169996674
+gc 0
+Train Epoch66 Acc 0.30475 (60950/200000), AUC 0.7987377047538757
+ep66_train_time 38.78015910699969
+Test Epoch66 layer0 Acc 0.2648, AUC 0.7975097894668579, avg_entr 0.04098057001829147, f1 0.2648000121116638
+ep66_l0_test_time 2.2173165359999985
+Test Epoch66 layer1 Acc 0.2834, AUC 0.7956640124320984, avg_entr 0.04927303269505501, f1 0.2833999991416931
+ep66_l1_test_time 2.215559012000085
+Test Epoch66 layer2 Acc 0.2947, AUC 0.7779667377471924, avg_entr 0.05768102407455444, f1 0.2946999967098236
+ep66_l2_test_time 2.328718884999944
+Test Epoch66 layer3 Acc 0.2929, AUC 0.7854025363922119, avg_entr 0.051756370812654495, f1 0.2928999960422516
+ep66_l3_test_time 2.266430465999747
+gc 0
+Train Epoch67 Acc 0.304895 (60979/200000), AUC 0.7991685271263123
+ep67_train_time 38.9063041899999
+Test Epoch67 layer0 Acc 0.2645, AUC 0.7974990010261536, avg_entr 0.040941882878541946, f1 0.2644999921321869
+ep67_l0_test_time 2.2178507089997765
+Test Epoch67 layer1 Acc 0.2828, AUC 0.7956610918045044, avg_entr 0.04916401207447052, f1 0.28279998898506165
+ep67_l1_test_time 2.2374991719998434
+Test Epoch67 layer2 Acc 0.2946, AUC 0.7779403924942017, avg_entr 0.05756533890962601, f1 0.2946000099182129
+ep67_l2_test_time 2.2454104560001724
+Test Epoch67 layer3 Acc 0.2928, AUC 0.7854366898536682, avg_entr 0.05171504616737366, f1 0.29280000925064087
+ep67_l3_test_time 2.239299330999984
+gc 0
+Train Epoch68 Acc 0.30409 (60818/200000), AUC 0.7989073395729065
+ep68_train_time 38.80681587299978
+Test Epoch68 layer0 Acc 0.2639, AUC 0.7975191473960876, avg_entr 0.04086853191256523, f1 0.2639000117778778
+ep68_l0_test_time 2.2006572010000127
+Test Epoch68 layer1 Acc 0.2828, AUC 0.7957069277763367, avg_entr 0.04901512339711189, f1 0.28279998898506165
+ep68_l1_test_time 2.1994147649998013
+Test Epoch68 layer2 Acc 0.2944, AUC 0.7779584527015686, avg_entr 0.057463567703962326, f1 0.29440000653266907
+ep68_l2_test_time 2.279581352999685
+Test Epoch68 layer3 Acc 0.293, AUC 0.7854911684989929, avg_entr 0.051602110266685486, f1 0.2930000126361847
+ep68_l3_test_time 2.2616423839999698
+gc 0
+Train Epoch69 Acc 0.305635 (61127/200000), AUC 0.7993003726005554
+ep69_train_time 38.83930872200017
+Test Epoch69 layer0 Acc 0.2643, AUC 0.7975189685821533, avg_entr 0.04094567522406578, f1 0.26429998874664307
+ep69_l0_test_time 2.225372820999837
+Test Epoch69 layer1 Acc 0.2831, AUC 0.7957098484039307, avg_entr 0.049164608120918274, f1 0.2831000089645386
+ep69_l1_test_time 2.21895126399977
+Test Epoch69 layer2 Acc 0.2945, AUC 0.7779542803764343, avg_entr 0.057573601603507996, f1 0.2944999933242798
+ep69_l2_test_time 2.237690786999792
+Test Epoch69 layer3 Acc 0.2923, AUC 0.78545743227005, avg_entr 0.05163531377911568, f1 0.2922999858856201
+ep69_l3_test_time 2.2351185040001837
+gc 0
+Train Epoch70 Acc 0.30536 (61072/200000), AUC 0.7992777824401855
+ep70_train_time 38.70495774099982
+Test Epoch70 layer0 Acc 0.2642, AUC 0.7975161671638489, avg_entr 0.04083791375160217, f1 0.26420000195503235
+ep70_l0_test_time 2.224311856999975
+Test Epoch70 layer1 Acc 0.2826, AUC 0.7957165241241455, avg_entr 0.04902762919664383, f1 0.2825999855995178
+ep70_l1_test_time 2.275839635000011
+Test Epoch70 layer2 Acc 0.2943, AUC 0.7779625654220581, avg_entr 0.05748901516199112, f1 0.29429998993873596
+ep70_l2_test_time 2.289349323999886
+Test Epoch70 layer3 Acc 0.2926, AUC 0.7854706645011902, avg_entr 0.051601964980363846, f1 0.29260000586509705
+ep70_l3_test_time 2.2621537939999143
+gc 0
+Train Epoch71 Acc 0.30472 (60944/200000), AUC 0.7990641593933105
+ep71_train_time 38.6012344589999
+Test Epoch71 layer0 Acc 0.2642, AUC 0.7974933385848999, avg_entr 0.04078288376331329, f1 0.26420000195503235
+ep71_l0_test_time 2.2472637129999384
+Test Epoch71 layer1 Acc 0.2828, AUC 0.795701265335083, avg_entr 0.04901246353983879, f1 0.28279998898506165
+ep71_l1_test_time 2.2165298180002537
+Test Epoch71 layer2 Acc 0.2947, AUC 0.7779780626296997, avg_entr 0.057510510087013245, f1 0.2946999967098236
+ep71_l2_test_time 2.26862759200003
+Test Epoch71 layer3 Acc 0.2924, AUC 0.7854801416397095, avg_entr 0.05162881314754486, f1 0.2924000024795532
+ep71_l3_test_time 2.238849220999782
+gc 0
+Train Epoch72 Acc 0.30447 (60894/200000), AUC 0.798434853553772
+ep72_train_time 38.719580939000025
+Test Epoch72 layer0 Acc 0.2643, AUC 0.7974992990493774, avg_entr 0.04076622799038887, f1 0.26429998874664307
+ep72_l0_test_time 2.2126695799997833
+Test Epoch72 layer1 Acc 0.2825, AUC 0.7956945300102234, avg_entr 0.048995424062013626, f1 0.2824999988079071
+ep72_l1_test_time 2.216637147000256
+Test Epoch72 layer2 Acc 0.2946, AUC 0.7779710292816162, avg_entr 0.05748138949275017, f1 0.2946000099182129
+ep72_l2_test_time 2.2289608340001905
+Test Epoch72 layer3 Acc 0.2925, AUC 0.7854781150817871, avg_entr 0.051603563129901886, f1 0.29249998927116394
+ep72_l3_test_time 2.259879563999675
+gc 0
+Train Epoch73 Acc 0.304005 (60801/200000), AUC 0.7994082570075989
+ep73_train_time 38.85513996199961
+Test Epoch73 layer0 Acc 0.2644, AUC 0.7975043654441833, avg_entr 0.04078789800405502, f1 0.26440000534057617
+ep73_l0_test_time 2.2450475820000975
+Test Epoch73 layer1 Acc 0.2825, AUC 0.7957046031951904, avg_entr 0.0490417405962944, f1 0.2824999988079071
+ep73_l1_test_time 2.2068296929996905
+Test Epoch73 layer2 Acc 0.2945, AUC 0.7779688835144043, avg_entr 0.05754207819700241, f1 0.2944999933242798
+ep73_l2_test_time 2.2377013590003116
+Test Epoch73 layer3 Acc 0.2925, AUC 0.7854809761047363, avg_entr 0.051648106426000595, f1 0.29249998927116394
+ep73_l3_test_time 2.249805723999998
+gc 0
+Train Epoch74 Acc 0.30383 (60766/200000), AUC 0.7984005212783813
+ep74_train_time 38.76220298300041
+Test Epoch74 layer0 Acc 0.2644, AUC 0.7975057363510132, avg_entr 0.04078145697712898, f1 0.26440000534057617
+ep74_l0_test_time 2.217597709999609
+Test Epoch74 layer1 Acc 0.2826, AUC 0.7957108020782471, avg_entr 0.04898914322257042, f1 0.2825999855995178
+ep74_l1_test_time 2.2143181950000326
+Test Epoch74 layer2 Acc 0.2946, AUC 0.7779736518859863, avg_entr 0.05749267712235451, f1 0.2946000099182129
+ep74_l2_test_time 2.239980586999991
+Test Epoch74 layer3 Acc 0.2926, AUC 0.7854908108711243, avg_entr 0.051619477570056915, f1 0.29260000586509705
+ep74_l3_test_time 2.2608067470000606
+gc 0
+Train Epoch75 Acc 0.304235 (60847/200000), AUC 0.7987025380134583
+ep75_train_time 38.97824618200002
+Test Epoch75 layer0 Acc 0.2645, AUC 0.7975011467933655, avg_entr 0.040768589824438095, f1 0.2644999921321869
+ep75_l0_test_time 2.2661556819998623
+Test Epoch75 layer1 Acc 0.2826, AUC 0.7957029938697815, avg_entr 0.04894954338669777, f1 0.2825999855995178
+ep75_l1_test_time 2.206575057000009
+Test Epoch75 layer2 Acc 0.2945, AUC 0.7779690623283386, avg_entr 0.057441532611846924, f1 0.2944999933242798
+ep75_l2_test_time 2.28966058900005
+Test Epoch75 layer3 Acc 0.2924, AUC 0.7854875326156616, avg_entr 0.05158377066254616, f1 0.2924000024795532
+ep75_l3_test_time 2.284599445999902
+gc 0
+Train Epoch76 Acc 0.30559 (61118/200000), AUC 0.7989150285720825
+ep76_train_time 38.64570370699994
+Test Epoch76 layer0 Acc 0.2645, AUC 0.7975000143051147, avg_entr 0.04076462984085083, f1 0.2644999921321869
+ep76_l0_test_time 2.2864867700000104
+Test Epoch76 layer1 Acc 0.2826, AUC 0.7957032918930054, avg_entr 0.04896401986479759, f1 0.2825999855995178
+ep76_l1_test_time 2.2272654660000626
+Test Epoch76 layer2 Acc 0.2945, AUC 0.777966320514679, avg_entr 0.057457201182842255, f1 0.2944999933242798
+ep76_l2_test_time 2.2326222670003517
+Test Epoch76 layer3 Acc 0.2925, AUC 0.7854844927787781, avg_entr 0.05160825699567795, f1 0.29249998927116394
+ep76_l3_test_time 2.258340904000306
+gc 0
+Train Epoch77 Acc 0.3047 (60940/200000), AUC 0.7987908720970154
+ep77_train_time 38.80750246400021
+Test Epoch77 layer0 Acc 0.2645, AUC 0.7975037097930908, avg_entr 0.04076104238629341, f1 0.2644999921321869
+ep77_l0_test_time 2.233695592999993
+Test Epoch77 layer1 Acc 0.2829, AUC 0.7957019209861755, avg_entr 0.04896162822842598, f1 0.28290000557899475
+ep77_l1_test_time 2.252610298000036
+Test Epoch77 layer2 Acc 0.2943, AUC 0.777964174747467, avg_entr 0.057448338717222214, f1 0.29429998993873596
+ep77_l2_test_time 2.2361578089999057
+Test Epoch77 layer3 Acc 0.2925, AUC 0.785490095615387, avg_entr 0.05160124599933624, f1 0.29249998927116394
+ep77_l3_test_time 2.269072827999935
+gc 0
+Train Epoch78 Acc 0.304965 (60993/200000), AUC 0.7989603281021118
+ep78_train_time 38.659853685000144
+Test Epoch78 layer0 Acc 0.2647, AUC 0.7975003719329834, avg_entr 0.04074952378869057, f1 0.2646999955177307
+ep78_l0_test_time 2.2171821060001093
+Test Epoch78 layer1 Acc 0.2826, AUC 0.7956981062889099, avg_entr 0.04894594848155975, f1 0.2825999855995178
+ep78_l1_test_time 2.265027626000119
+Test Epoch78 layer2 Acc 0.2944, AUC 0.777955949306488, avg_entr 0.05743107199668884, f1 0.29440000653266907
+ep78_l2_test_time 2.225666032999925
+Test Epoch78 layer3 Acc 0.2924, AUC 0.7854834794998169, avg_entr 0.05158513784408569, f1 0.2924000024795532
+ep78_l3_test_time 2.2587811299999885
+gc 0
+Train Epoch79 Acc 0.303965 (60793/200000), AUC 0.7984226942062378
+ep79_train_time 38.84661584500009
+Test Epoch79 layer0 Acc 0.2646, AUC 0.7974989414215088, avg_entr 0.04072999209165573, f1 0.26460000872612
+ep79_l0_test_time 2.2266769339998973
+Test Epoch79 layer1 Acc 0.2828, AUC 0.7956998944282532, avg_entr 0.048934705555438995, f1 0.28279998898506165
+ep79_l1_test_time 2.2095482539998557
+Test Epoch79 layer2 Acc 0.2943, AUC 0.7779533863067627, avg_entr 0.057418372482061386, f1 0.29429998993873596
+ep79_l2_test_time 2.265928249999888
+Test Epoch79 layer3 Acc 0.2925, AUC 0.7854824066162109, avg_entr 0.05157378688454628, f1 0.29249998927116394
+ep79_l3_test_time 2.250508670999807
+gc 0
+Train Epoch80 Acc 0.30417 (60834/200000), AUC 0.7990919351577759
+ep80_train_time 38.88282200799995
+Test Epoch80 layer0 Acc 0.2646, AUC 0.7975008487701416, avg_entr 0.040733154863119125, f1 0.26460000872612
+ep80_l0_test_time 2.2033394209997823
+Test Epoch80 layer1 Acc 0.2826, AUC 0.7957029938697815, avg_entr 0.04895167797803879, f1 0.2825999855995178
+ep80_l1_test_time 2.210244467999928
+Test Epoch80 layer2 Acc 0.2943, AUC 0.7779548168182373, avg_entr 0.05743035301566124, f1 0.29429998993873596
+ep80_l2_test_time 2.2430131959999926
+Test Epoch80 layer3 Acc 0.2924, AUC 0.7854854464530945, avg_entr 0.051580969244241714, f1 0.2924000024795532
+ep80_l3_test_time 2.2624073479996696
+gc 0
+Train Epoch81 Acc 0.303665 (60733/200000), AUC 0.798868715763092
+ep81_train_time 38.79211611399978
+Test Epoch81 layer0 Acc 0.2646, AUC 0.7974982261657715, avg_entr 0.04073174297809601, f1 0.26460000872612
+ep81_l0_test_time 2.221842533999734
+Test Epoch81 layer1 Acc 0.2826, AUC 0.7957022190093994, avg_entr 0.0489443801343441, f1 0.2825999855995178
+ep81_l1_test_time 2.225118113999997
+Test Epoch81 layer2 Acc 0.2944, AUC 0.7779523730278015, avg_entr 0.05741516873240471, f1 0.29440000653266907
+ep81_l2_test_time 2.241888255000049
+Test Epoch81 layer3 Acc 0.2925, AUC 0.7854776978492737, avg_entr 0.05156995728611946, f1 0.29249998927116394
+ep81_l3_test_time 2.2676274709997415
+gc 0
+Train Epoch82 Acc 0.304335 (60867/200000), AUC 0.798850417137146
+ep82_train_time 38.676101452999774
+Test Epoch82 layer0 Acc 0.2646, AUC 0.7974985241889954, avg_entr 0.04072517156600952, f1 0.26460000872612
+ep82_l0_test_time 2.257652872000108
+Test Epoch82 layer1 Acc 0.2826, AUC 0.7957028150558472, avg_entr 0.048946574330329895, f1 0.2825999855995178
+ep82_l1_test_time 2.2059327140000278
+Test Epoch82 layer2 Acc 0.2943, AUC 0.7779456377029419, avg_entr 0.05741484463214874, f1 0.29429998993873596
+ep82_l2_test_time 2.2279016389998105
+Test Epoch82 layer3 Acc 0.2924, AUC 0.7854734659194946, avg_entr 0.051562342792749405, f1 0.2924000024795532
+ep82_l3_test_time 2.2498369009999806
+gc 0
+Train Epoch83 Acc 0.305055 (61011/200000), AUC 0.7994681596755981
+ep83_train_time 38.95846791200029
+Test Epoch83 layer0 Acc 0.2646, AUC 0.7974961996078491, avg_entr 0.04071876406669617, f1 0.26460000872612
+ep83_l0_test_time 2.205897310000182
+Test Epoch83 layer1 Acc 0.2826, AUC 0.7957010865211487, avg_entr 0.048938557505607605, f1 0.2825999855995178
+ep83_l1_test_time 2.2166176430000633
+Test Epoch83 layer2 Acc 0.2944, AUC 0.7779464721679688, avg_entr 0.0574120432138443, f1 0.29440000653266907
+ep83_l2_test_time 2.224970360000043
+Test Epoch83 layer3 Acc 0.2924, AUC 0.7854753732681274, avg_entr 0.05156587064266205, f1 0.2924000024795532
+ep83_l3_test_time 2.2339063869999336
+gc 0
+Train Epoch84 Acc 0.30541 (61082/200000), AUC 0.7995489239692688
+ep84_train_time 38.68337243899987
+Test Epoch84 layer0 Acc 0.2646, AUC 0.7974965572357178, avg_entr 0.04072031378746033, f1 0.26460000872612
+ep84_l0_test_time 2.2405651359999865
+Test Epoch84 layer1 Acc 0.2826, AUC 0.795702338218689, avg_entr 0.048937562853097916, f1 0.2825999855995178
+ep84_l1_test_time 2.2685271889999967
+Test Epoch84 layer2 Acc 0.2944, AUC 0.777946949005127, avg_entr 0.05741365998983383, f1 0.29440000653266907
+ep84_l2_test_time 2.2353075400001217
+Test Epoch84 layer3 Acc 0.2924, AUC 0.7854780554771423, avg_entr 0.05156779661774635, f1 0.2924000024795532
+ep84_l3_test_time 2.2413312030003
+gc 0
+Train Epoch85 Acc 0.30317 (60634/200000), AUC 0.7988584637641907
+ep85_train_time 38.771799639000164
+Test Epoch85 layer0 Acc 0.2646, AUC 0.7974966168403625, avg_entr 0.040723349899053574, f1 0.26460000872612
+ep85_l0_test_time 2.208096908999323
+Test Epoch85 layer1 Acc 0.2826, AUC 0.7956990003585815, avg_entr 0.04893457144498825, f1 0.2825999855995178
+ep85_l1_test_time 2.1888101730000926
+Test Epoch85 layer2 Acc 0.2944, AUC 0.7779456973075867, avg_entr 0.05741645395755768, f1 0.29440000653266907
+ep85_l2_test_time 2.2276949639999657
+Test Epoch85 layer3 Acc 0.2925, AUC 0.7854760885238647, avg_entr 0.05157077684998512, f1 0.29249998927116394
+ep85_l3_test_time 2.2491819409997333
+gc 0
+Train Epoch86 Acc 0.30537 (61074/200000), AUC 0.7989101409912109
+ep86_train_time 38.69235008800024
+Test Epoch86 layer0 Acc 0.2646, AUC 0.7974979281425476, avg_entr 0.04072369262576103, f1 0.26460000872612
+ep86_l0_test_time 2.222474146999957
+Test Epoch86 layer1 Acc 0.2826, AUC 0.7956995964050293, avg_entr 0.04893367365002632, f1 0.2825999855995178
+ep86_l1_test_time 2.215429437000239
+Test Epoch86 layer2 Acc 0.2944, AUC 0.7779470682144165, avg_entr 0.057417210191488266, f1 0.29440000653266907
+ep86_l2_test_time 2.2862015439995957
+Test Epoch86 layer3 Acc 0.2925, AUC 0.7854752540588379, avg_entr 0.05157087370753288, f1 0.29249998927116394
+ep86_l3_test_time 2.2851726950002558
+gc 0
+Train Epoch87 Acc 0.30543 (61086/200000), AUC 0.799238920211792
+ep87_train_time 38.8621439919998
+Test Epoch87 layer0 Acc 0.2646, AUC 0.7974979281425476, avg_entr 0.04072398692369461, f1 0.26460000872612
+ep87_l0_test_time 2.2163724219999494
+Test Epoch87 layer1 Acc 0.2826, AUC 0.7957003116607666, avg_entr 0.048931874334812164, f1 0.2825999855995178
+ep87_l1_test_time 2.2269811500000287
+Test Epoch87 layer2 Acc 0.2943, AUC 0.7779482007026672, avg_entr 0.05741776153445244, f1 0.29429998993873596
+ep87_l2_test_time 2.218166325000311
+Test Epoch87 layer3 Acc 0.2927, AUC 0.7854758501052856, avg_entr 0.05156981945037842, f1 0.29269999265670776
+ep87_l3_test_time 2.247067018999587
+gc 0
+Train Epoch88 Acc 0.304355 (60871/200000), AUC 0.7991347312927246
+ep88_train_time 38.64591221200044
+Test Epoch88 layer0 Acc 0.2646, AUC 0.7974981665611267, avg_entr 0.040724754333496094, f1 0.26460000872612
+ep88_l0_test_time 2.2363085569995746
+Test Epoch88 layer1 Acc 0.2826, AUC 0.7957005500793457, avg_entr 0.04893084242939949, f1 0.2825999855995178
+ep88_l1_test_time 2.2330752679999932
+Test Epoch88 layer2 Acc 0.2943, AUC 0.7779475450515747, avg_entr 0.05741795152425766, f1 0.29429998993873596
+ep88_l2_test_time 2.2394238400001996
+Test Epoch88 layer3 Acc 0.2927, AUC 0.7854755520820618, avg_entr 0.05157177895307541, f1 0.29269999265670776
+ep88_l3_test_time 2.2652247420001004
+gc 0
+Train Epoch89 Acc 0.30389 (60778/200000), AUC 0.7988443970680237
+ep89_train_time 38.68835052899976
+Test Epoch89 layer0 Acc 0.2646, AUC 0.7974984049797058, avg_entr 0.04072596877813339, f1 0.26460000872612
+ep89_l0_test_time 2.201842418000524
+Test Epoch89 layer1 Acc 0.2826, AUC 0.7957000732421875, avg_entr 0.04893217608332634, f1 0.2825999855995178
+ep89_l1_test_time 2.2240226349995282
+Test Epoch89 layer2 Acc 0.2943, AUC 0.7779470682144165, avg_entr 0.057418499141931534, f1 0.29429998993873596
+ep89_l2_test_time 2.2281786189996637
+Test Epoch89 layer3 Acc 0.2927, AUC 0.7854750156402588, avg_entr 0.051572661846876144, f1 0.29269999265670776
+ep89_l3_test_time 2.2876109650005674
+gc 0
+Train Epoch90 Acc 0.30479 (60958/200000), AUC 0.7994012236595154
+ep90_train_time 38.72661678099939
+Test Epoch90 layer0 Acc 0.2646, AUC 0.7974985241889954, avg_entr 0.04072612151503563, f1 0.26460000872612
+ep90_l0_test_time 2.22022746499988
+Test Epoch90 layer1 Acc 0.2826, AUC 0.7957003116607666, avg_entr 0.04893314465880394, f1 0.2825999855995178
+ep90_l1_test_time 2.2076976879998256
+Test Epoch90 layer2 Acc 0.2943, AUC 0.7779474854469299, avg_entr 0.057419341057538986, f1 0.29429998993873596
+ep90_l2_test_time 2.258170737999535
+Test Epoch90 layer3 Acc 0.2927, AUC 0.785474956035614, avg_entr 0.05157402157783508, f1 0.29269999265670776
+ep90_l3_test_time 2.243458835000638
+gc 0
+Train Epoch91 Acc 0.304395 (60879/200000), AUC 0.7996454834938049
+ep91_train_time 38.69226089699987
+Test Epoch91 layer0 Acc 0.2646, AUC 0.7974975109100342, avg_entr 0.04072689637541771, f1 0.26460000872612
+ep91_l0_test_time 2.1928915019998385
+Test Epoch91 layer1 Acc 0.2826, AUC 0.7957001328468323, avg_entr 0.04893418401479721, f1 0.2825999855995178
+ep91_l1_test_time 2.1993632260000595
+Test Epoch91 layer2 Acc 0.2943, AUC 0.7779486179351807, avg_entr 0.05741798132658005, f1 0.29429998993873596
+ep91_l2_test_time 2.2273247479997735
+Test Epoch91 layer3 Acc 0.2927, AUC 0.7854762077331543, avg_entr 0.05157377943396568, f1 0.29269999265670776
+ep91_l3_test_time 2.2433606829999917
+gc 0
+Train Epoch92 Acc 0.30435 (60870/200000), AUC 0.7992799878120422
+ep92_train_time 38.82744752899998
+Test Epoch92 layer0 Acc 0.2646, AUC 0.7974979281425476, avg_entr 0.04072710499167442, f1 0.26460000872612
+ep92_l0_test_time 2.2050410570000167
+Test Epoch92 layer1 Acc 0.2826, AUC 0.7957006692886353, avg_entr 0.04893346130847931, f1 0.2825999855995178
+ep92_l1_test_time 2.220556743999623
+Test Epoch92 layer2 Acc 0.2942, AUC 0.7779486179351807, avg_entr 0.05741886422038078, f1 0.29420000314712524
+ep92_l2_test_time 2.22375907300011
+Test Epoch92 layer3 Acc 0.2927, AUC 0.7854759097099304, avg_entr 0.05157443881034851, f1 0.29269999265670776
+ep92_l3_test_time 2.2315313700000843
+gc 0
+Train Epoch93 Acc 0.30399 (60798/200000), AUC 0.7992769479751587
+ep93_train_time 38.832769902999644
+Test Epoch93 layer0 Acc 0.2647, AUC 0.7974981069564819, avg_entr 0.040727369487285614, f1 0.2646999955177307
+ep93_l0_test_time 2.2246930860001157
+Test Epoch93 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.048934455960989, f1 0.2825999855995178
+ep93_l1_test_time 2.201224105999245
+Test Epoch93 layer2 Acc 0.2942, AUC 0.7779492139816284, avg_entr 0.05742038041353226, f1 0.29420000314712524
+ep93_l2_test_time 2.2450298969997675
+Test Epoch93 layer3 Acc 0.2927, AUC 0.7854763269424438, avg_entr 0.0515763983130455, f1 0.29269999265670776
+ep93_l3_test_time 2.2451776750003773
+gc 0
+Train Epoch94 Acc 0.305455 (61091/200000), AUC 0.7994493842124939
+ep94_train_time 38.84655296799974
+Test Epoch94 layer0 Acc 0.2647, AUC 0.7974981069564819, avg_entr 0.040729373693466187, f1 0.2646999955177307
+ep94_l0_test_time 2.229801401000259
+Test Epoch94 layer1 Acc 0.2826, AUC 0.7957006096839905, avg_entr 0.048935577273368835, f1 0.2825999855995178
+ep94_l1_test_time 2.218033540999386
+Test Epoch94 layer2 Acc 0.2942, AUC 0.7779490947723389, avg_entr 0.05741967633366585, f1 0.29420000314712524
+ep94_l2_test_time 2.230285563000507
+Test Epoch94 layer3 Acc 0.2927, AUC 0.7854764461517334, avg_entr 0.051576048135757446, f1 0.29269999265670776
+ep94_l3_test_time 2.2941395219995684
+gc 0
+Train Epoch95 Acc 0.304045 (60809/200000), AUC 0.7988052368164062
+ep95_train_time 38.69816091499979
+Test Epoch95 layer0 Acc 0.2647, AUC 0.7974984645843506, avg_entr 0.0407298244535923, f1 0.2646999955177307
+ep95_l0_test_time 2.213585181999406
+Test Epoch95 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.0489363931119442, f1 0.2825999855995178
+ep95_l1_test_time 2.1984689729997626
+Test Epoch95 layer2 Acc 0.2942, AUC 0.7779484391212463, avg_entr 0.05742010474205017, f1 0.29420000314712524
+ep95_l2_test_time 2.257996192000064
+Test Epoch95 layer3 Acc 0.2927, AUC 0.785474419593811, avg_entr 0.05157414451241493, f1 0.29269999265670776
+ep95_l3_test_time 2.2269398329999603
+gc 0
+Train Epoch96 Acc 0.304655 (60931/200000), AUC 0.7983199954032898
+ep96_train_time 38.95374240000001
+Test Epoch96 layer0 Acc 0.2647, AUC 0.7974981665611267, avg_entr 0.04073059558868408, f1 0.2646999955177307
+ep96_l0_test_time 2.209422486999756
+Test Epoch96 layer1 Acc 0.2826, AUC 0.7957009077072144, avg_entr 0.048937488347291946, f1 0.2825999855995178
+ep96_l1_test_time 2.2069456130002436
+Test Epoch96 layer2 Acc 0.2942, AUC 0.7779499292373657, avg_entr 0.0574214830994606, f1 0.29420000314712524
+ep96_l2_test_time 2.243362650999188
+Test Epoch96 layer3 Acc 0.2927, AUC 0.7854756712913513, avg_entr 0.051575664430856705, f1 0.29269999265670776
+ep96_l3_test_time 2.2347556490003626
+gc 0
+Train Epoch97 Acc 0.304705 (60941/200000), AUC 0.7988725900650024
+ep97_train_time 38.791455674000645
+Test Epoch97 layer0 Acc 0.2647, AUC 0.7974976301193237, avg_entr 0.04073234274983406, f1 0.2646999955177307
+ep97_l0_test_time 2.214387613999861
+Test Epoch97 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.04893888160586357, f1 0.2825999855995178
+ep97_l1_test_time 2.23223302399947
+Test Epoch97 layer2 Acc 0.2943, AUC 0.7779505252838135, avg_entr 0.05742243677377701, f1 0.29429998993873596
+ep97_l2_test_time 2.2516127420003613
+Test Epoch97 layer3 Acc 0.2927, AUC 0.7854757905006409, avg_entr 0.05157734453678131, f1 0.29269999265670776
+ep97_l3_test_time 2.2641557489996558
+gc 0
+Train Epoch98 Acc 0.303605 (60721/200000), AUC 0.7986379265785217
+ep98_train_time 38.7805474529996
+Test Epoch98 layer0 Acc 0.2647, AUC 0.7974976897239685, avg_entr 0.040733084082603455, f1 0.2646999955177307
+ep98_l0_test_time 2.1939463019998584
+Test Epoch98 layer1 Acc 0.2826, AUC 0.7957003712654114, avg_entr 0.048940762877464294, f1 0.2825999855995178
+ep98_l1_test_time 2.204374787999768
+Test Epoch98 layer2 Acc 0.2942, AUC 0.7779502272605896, avg_entr 0.05742616578936577, f1 0.29420000314712524
+ep98_l2_test_time 2.221059287000571
+Test Epoch98 layer3 Acc 0.2927, AUC 0.785474419593811, avg_entr 0.05157862603664398, f1 0.29269999265670776
+ep98_l3_test_time 2.2287628940002833
+gc 0
+Train Epoch99 Acc 0.305175 (61035/200000), AUC 0.7986793518066406
+ep99_train_time 38.853254071000265
+Test Epoch99 layer0 Acc 0.2647, AUC 0.7974981069564819, avg_entr 0.04073164239525795, f1 0.2646999955177307
+ep99_l0_test_time 2.2029132249999748
+Test Epoch99 layer1 Acc 0.2826, AUC 0.795701265335083, avg_entr 0.048938777297735214, f1 0.2825999855995178
+ep99_l1_test_time 2.2302905849992385
+Test Epoch99 layer2 Acc 0.2942, AUC 0.7779518961906433, avg_entr 0.057425737380981445, f1 0.29420000314712524
+ep99_l2_test_time 2.232459486999687
+Test Epoch99 layer3 Acc 0.2925, AUC 0.7854752540588379, avg_entr 0.05157807469367981, f1 0.29249998927116394
+ep99_l3_test_time 2.3275263369996537
+gc 0
+Train Epoch100 Acc 0.304055 (60811/200000), AUC 0.7983617186546326
+ep100_train_time 38.83230811499925
+Test Epoch100 layer0 Acc 0.2647, AUC 0.7974978685379028, avg_entr 0.04073000326752663, f1 0.2646999955177307
+ep100_l0_test_time 2.20682893600042
+Test Epoch100 layer1 Acc 0.2826, AUC 0.7957012057304382, avg_entr 0.048938654363155365, f1 0.2825999855995178
+ep100_l1_test_time 2.211188363000474
+Test Epoch100 layer2 Acc 0.2943, AUC 0.7779518365859985, avg_entr 0.05742546543478966, f1 0.29429998993873596
+ep100_l2_test_time 2.2384445279994907
+Test Epoch100 layer3 Acc 0.2926, AUC 0.7854759693145752, avg_entr 0.051577623933553696, f1 0.29260000586509705
+ep100_l3_test_time 2.2491527700003644
+gc 0
+Train Epoch101 Acc 0.306825 (61365/200000), AUC 0.7986006736755371
+ep101_train_time 38.88650839300044
+Test Epoch101 layer0 Acc 0.2647, AUC 0.7974970936775208, avg_entr 0.04073020815849304, f1 0.2646999955177307
+ep101_l0_test_time 2.2475403219996224
+Test Epoch101 layer1 Acc 0.2826, AUC 0.7957003712654114, avg_entr 0.04893847182393074, f1 0.2825999855995178
+ep101_l1_test_time 2.203083924000566
+Test Epoch101 layer2 Acc 0.2943, AUC 0.777953028678894, avg_entr 0.05742553621530533, f1 0.29429998993873596
+ep101_l2_test_time 2.2270566790002704
+Test Epoch101 layer3 Acc 0.2925, AUC 0.7854755520820618, avg_entr 0.05157722160220146, f1 0.29249998927116394
+ep101_l3_test_time 2.263152122000065
+gc 0
+Train Epoch102 Acc 0.303255 (60651/200000), AUC 0.7989201545715332
+ep102_train_time 38.72098176000054
+Test Epoch102 layer0 Acc 0.2647, AUC 0.797497570514679, avg_entr 0.04073226824402809, f1 0.2646999955177307
+ep102_l0_test_time 2.2055981859994063
+Test Epoch102 layer1 Acc 0.2825, AUC 0.7957000732421875, avg_entr 0.04893973842263222, f1 0.2824999988079071
+ep102_l1_test_time 2.1993748430004416
+Test Epoch102 layer2 Acc 0.2943, AUC 0.7779538035392761, avg_entr 0.05742714926600456, f1 0.29429998993873596
+ep102_l2_test_time 2.2383806630004983
+Test Epoch102 layer3 Acc 0.2926, AUC 0.7854745984077454, avg_entr 0.05157777667045593, f1 0.29260000586509705
+ep102_l3_test_time 2.2373194219999277
+gc 0
+Train Epoch103 Acc 0.304575 (60915/200000), AUC 0.7992627620697021
+ep103_train_time 38.905066172999796
+Test Epoch103 layer0 Acc 0.2647, AUC 0.7974975109100342, avg_entr 0.040730949491262436, f1 0.2646999955177307
+ep103_l0_test_time 2.24541978400066
+Test Epoch103 layer1 Acc 0.2826, AUC 0.7957007884979248, avg_entr 0.04894031956791878, f1 0.2825999855995178
+ep103_l1_test_time 2.22108625600049
+Test Epoch103 layer2 Acc 0.2942, AUC 0.7779548764228821, avg_entr 0.05743137747049332, f1 0.29420000314712524
+ep103_l2_test_time 2.2475344360000236
+Test Epoch103 layer3 Acc 0.2927, AUC 0.7854758501052856, avg_entr 0.05158201977610588, f1 0.29269999265670776
+ep103_l3_test_time 2.246414757999446
+gc 0
+Train Epoch104 Acc 0.30448 (60896/200000), AUC 0.7993183732032776
+ep104_train_time 38.77959305400054
+Test Epoch104 layer0 Acc 0.2647, AUC 0.7974976301193237, avg_entr 0.04073060303926468, f1 0.2646999955177307
+ep104_l0_test_time 2.206175200999496
+Test Epoch104 layer1 Acc 0.2826, AUC 0.7957008481025696, avg_entr 0.048941999673843384, f1 0.2825999855995178
+ep104_l1_test_time 2.2179009799992855
+Test Epoch104 layer2 Acc 0.2942, AUC 0.7779546976089478, avg_entr 0.057432133704423904, f1 0.29420000314712524
+ep104_l2_test_time 2.235807770000065
+Test Epoch104 layer3 Acc 0.2926, AUC 0.7854760885238647, avg_entr 0.051581110805273056, f1 0.29260000586509705
+ep104_l3_test_time 2.2948365840002225
+gc 0
+Train Epoch105 Acc 0.30416 (60832/200000), AUC 0.7991346120834351
+ep105_train_time 38.803821173999495
+Test Epoch105 layer0 Acc 0.2647, AUC 0.7974978685379028, avg_entr 0.04073239862918854, f1 0.2646999955177307
+ep105_l0_test_time 2.2003267179998147
+Test Epoch105 layer1 Acc 0.2826, AUC 0.7957010865211487, avg_entr 0.04894431680440903, f1 0.2825999855995178
+ep105_l1_test_time 2.2105933380007627
+Test Epoch105 layer2 Acc 0.2942, AUC 0.7779543399810791, avg_entr 0.05743364244699478, f1 0.29420000314712524
+ep105_l2_test_time 2.2559753069999715
+Test Epoch105 layer3 Acc 0.2925, AUC 0.7854758501052856, avg_entr 0.05158185586333275, f1 0.29249998927116394
+ep105_l3_test_time 2.2651835469996513
+gc 0
+Train Epoch106 Acc 0.30457 (60914/200000), AUC 0.7989562153816223
+ep106_train_time 38.905717767999704
+Test Epoch106 layer0 Acc 0.2647, AUC 0.7974978089332581, avg_entr 0.04073348268866539, f1 0.2646999955177307
+ep106_l0_test_time 2.1942021590002696
+Test Epoch106 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.04894379898905754, f1 0.2825999855995178
+ep106_l1_test_time 2.223376778000784
+Test Epoch106 layer2 Acc 0.2942, AUC 0.7779538035392761, avg_entr 0.05743216723203659, f1 0.29420000314712524
+ep106_l2_test_time 2.2167708110000603
+Test Epoch106 layer3 Acc 0.2924, AUC 0.7854755520820618, avg_entr 0.051577601581811905, f1 0.2924000024795532
+ep106_l3_test_time 2.3430068759998903
+gc 0
+Train Epoch107 Acc 0.304945 (60989/200000), AUC 0.7992410063743591
+ep107_train_time 38.76792866100004
+Test Epoch107 layer0 Acc 0.2647, AUC 0.7974979281425476, avg_entr 0.040733564645051956, f1 0.2646999955177307
+ep107_l0_test_time 2.2214869809995434
+Test Epoch107 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.04894513264298439, f1 0.2825999855995178
+ep107_l1_test_time 2.215826019000815
+Test Epoch107 layer2 Acc 0.2942, AUC 0.7779532670974731, avg_entr 0.05743260681629181, f1 0.29420000314712524
+ep107_l2_test_time 2.272639218000222
+Test Epoch107 layer3 Acc 0.2925, AUC 0.7854747772216797, avg_entr 0.0515788197517395, f1 0.29249998927116394
+ep107_l3_test_time 2.2683557800000926
+gc 0
+Train Epoch108 Acc 0.30446 (60892/200000), AUC 0.7992671728134155
+ep108_train_time 38.92053496799963
+Test Epoch108 layer0 Acc 0.2647, AUC 0.7974981665611267, avg_entr 0.04073435813188553, f1 0.2646999955177307
+ep108_l0_test_time 2.209385808000661
+Test Epoch108 layer1 Acc 0.2826, AUC 0.7957014441490173, avg_entr 0.04894627630710602, f1 0.2825999855995178
+ep108_l1_test_time 2.2459860549997757
+Test Epoch108 layer2 Acc 0.2942, AUC 0.7779532670974731, avg_entr 0.057432323694229126, f1 0.29420000314712524
+ep108_l2_test_time 2.272534749999977
+Test Epoch108 layer3 Acc 0.2925, AUC 0.7854753732681274, avg_entr 0.05157827213406563, f1 0.29249998927116394
+ep108_l3_test_time 2.280718125999556
+gc 0
+Train Epoch109 Acc 0.306105 (61221/200000), AUC 0.7995773553848267
+ep109_train_time 38.73824637300004
+Test Epoch109 layer0 Acc 0.2647, AUC 0.7974978089332581, avg_entr 0.04073373228311539, f1 0.2646999955177307
+ep109_l0_test_time 2.2227742159993795
+Test Epoch109 layer1 Acc 0.2826, AUC 0.7957021594047546, avg_entr 0.04894654080271721, f1 0.2825999855995178
+ep109_l1_test_time 2.2133362860004127
+Test Epoch109 layer2 Acc 0.2942, AUC 0.777953028678894, avg_entr 0.057432904839515686, f1 0.29420000314712524
+ep109_l2_test_time 2.23749471300016
+Test Epoch109 layer3 Acc 0.2925, AUC 0.7854752540588379, avg_entr 0.051580823957920074, f1 0.29249998927116394
+ep109_l3_test_time 2.23339099200075
+gc 0
+Train Epoch110 Acc 0.30553 (61106/200000), AUC 0.7993249297142029
+ep110_train_time 39.07146734700018
+Test Epoch110 layer0 Acc 0.2647, AUC 0.7974971532821655, avg_entr 0.0407346673309803, f1 0.2646999955177307
+ep110_l0_test_time 2.2177529369992044
+Test Epoch110 layer1 Acc 0.2826, AUC 0.795701265335083, avg_entr 0.04894743859767914, f1 0.2825999855995178
+ep110_l1_test_time 2.2728699859999324
+Test Epoch110 layer2 Acc 0.2942, AUC 0.7779524326324463, avg_entr 0.057434309273958206, f1 0.29420000314712524
+ep110_l2_test_time 2.2506862739992357
+Test Epoch110 layer3 Acc 0.2924, AUC 0.7854763865470886, avg_entr 0.05158058926463127, f1 0.2924000024795532
+ep110_l3_test_time 2.2664503070000137
+gc 0
+Train Epoch111 Acc 0.30532 (61064/200000), AUC 0.7985114455223083
+ep111_train_time 38.56086842199966
+Test Epoch111 layer0 Acc 0.2647, AUC 0.7974972724914551, avg_entr 0.04073605686426163, f1 0.2646999955177307
+ep111_l0_test_time 2.2326017559998945
+Test Epoch111 layer1 Acc 0.2826, AUC 0.7957016825675964, avg_entr 0.04895038157701492, f1 0.2825999855995178
+ep111_l1_test_time 2.2153288469999097
+Test Epoch111 layer2 Acc 0.2942, AUC 0.7779533267021179, avg_entr 0.05743582919239998, f1 0.29420000314712524
+ep111_l2_test_time 2.315772379000009
+Test Epoch111 layer3 Acc 0.2926, AUC 0.7854733467102051, avg_entr 0.051582008600234985, f1 0.29260000586509705
+ep111_l3_test_time 2.279994672999237
+gc 0
+Train Epoch112 Acc 0.30455 (60910/200000), AUC 0.7991215586662292
+ep112_train_time 39.04253802399944
+Test Epoch112 layer0 Acc 0.2647, AUC 0.7974976897239685, avg_entr 0.04073591157793999, f1 0.2646999955177307
+ep112_l0_test_time 2.2002366249998886
+Test Epoch112 layer1 Acc 0.2826, AUC 0.7957017421722412, avg_entr 0.04894871637225151, f1 0.2825999855995178
+ep112_l1_test_time 2.204225640000004
+Test Epoch112 layer2 Acc 0.2942, AUC 0.7779538035392761, avg_entr 0.05743236094713211, f1 0.29420000314712524
+ep112_l2_test_time 2.2521332070000426
+Test Epoch112 layer3 Acc 0.2925, AUC 0.7854739427566528, avg_entr 0.05157800391316414, f1 0.29249998927116394
+ep112_l3_test_time 2.2486374400004934
+gc 0
+Train Epoch113 Acc 0.304685 (60937/200000), AUC 0.7987943887710571
+ep113_train_time 38.98738159899949
+Test Epoch113 layer0 Acc 0.2647, AUC 0.7974979877471924, avg_entr 0.04073707014322281, f1 0.2646999955177307
+ep113_l0_test_time 2.2124968719999742
+Test Epoch113 layer1 Acc 0.2826, AUC 0.7957015037536621, avg_entr 0.04895035922527313, f1 0.2825999855995178
+ep113_l1_test_time 2.2040765380006633
+Test Epoch113 layer2 Acc 0.2942, AUC 0.7779554128646851, avg_entr 0.057432807981967926, f1 0.29420000314712524
+ep113_l2_test_time 2.230061253000713
+Test Epoch113 layer3 Acc 0.2926, AUC 0.7854747176170349, avg_entr 0.05157655477523804, f1 0.29260000586509705
+ep113_l3_test_time 2.273054869999214
+gc 0
+Train Epoch114 Acc 0.30423 (60846/200000), AUC 0.799102783203125
+ep114_train_time 39.02099118000024
+Test Epoch114 layer0 Acc 0.2647, AUC 0.7974979877471924, avg_entr 0.04073892906308174, f1 0.2646999955177307
+ep114_l0_test_time 2.208881399999882
+Test Epoch114 layer1 Acc 0.2826, AUC 0.7957011461257935, avg_entr 0.04895223304629326, f1 0.2825999855995178
+ep114_l1_test_time 2.2053912880001008
+Test Epoch114 layer2 Acc 0.2942, AUC 0.7779546976089478, avg_entr 0.05743419751524925, f1 0.29420000314712524
+ep114_l2_test_time 2.2459167040005923
+Test Epoch114 layer3 Acc 0.2925, AUC 0.7854739427566528, avg_entr 0.051576368510723114, f1 0.29249998927116394
+ep114_l3_test_time 2.2846923750003043
+gc 0
+Train Epoch115 Acc 0.304965 (60993/200000), AUC 0.7986034154891968
+ep115_train_time 38.789522197000224
+Test Epoch115 layer0 Acc 0.2647, AUC 0.7974979877471924, avg_entr 0.040738996118307114, f1 0.2646999955177307
+ep115_l0_test_time 2.2164845750003224
+Test Epoch115 layer1 Acc 0.2826, AUC 0.7957004308700562, avg_entr 0.04895233362913132, f1 0.2825999855995178
+ep115_l1_test_time 2.221797510000215
+Test Epoch115 layer2 Acc 0.2942, AUC 0.7779554128646851, avg_entr 0.05743466317653656, f1 0.29420000314712524
+ep115_l2_test_time 2.2485283440000785
+Test Epoch115 layer3 Acc 0.2925, AUC 0.7854728102684021, avg_entr 0.051576659083366394, f1 0.29249998927116394
+ep115_l3_test_time 2.264789865000239
+gc 0
+Train Epoch116 Acc 0.30511 (61022/200000), AUC 0.7991175651550293
+ep116_train_time 38.962105592000626
+Test Epoch116 layer0 Acc 0.2647, AUC 0.7974978089332581, avg_entr 0.04073908552527428, f1 0.2646999955177307
+ep116_l0_test_time 2.22687760000008
+Test Epoch116 layer1 Acc 0.2826, AUC 0.7957011461257935, avg_entr 0.048952411860227585, f1 0.2825999855995178
+ep116_l1_test_time 2.269234062000578
+Test Epoch116 layer2 Acc 0.2943, AUC 0.7779558300971985, avg_entr 0.05743516981601715, f1 0.29429998993873596
+ep116_l2_test_time 2.2551235880000604
+Test Epoch116 layer3 Acc 0.2925, AUC 0.7854741811752319, avg_entr 0.05157763138413429, f1 0.29249998927116394
+ep116_l3_test_time 2.263187103999371
+gc 0
+Train Epoch117 Acc 0.30365 (60730/200000), AUC 0.7985325455665588
+ep117_train_time 38.96075833699979
+Test Epoch117 layer0 Acc 0.2647, AUC 0.7974972724914551, avg_entr 0.04073844850063324, f1 0.2646999955177307
+ep117_l0_test_time 2.2391126619995703
+Test Epoch117 layer1 Acc 0.2826, AUC 0.7957010865211487, avg_entr 0.04895150288939476, f1 0.2825999855995178
+ep117_l1_test_time 2.200384851999843
+Test Epoch117 layer2 Acc 0.2943, AUC 0.7779558300971985, avg_entr 0.057435136288404465, f1 0.29429998993873596
+ep117_l2_test_time 2.241036645999884
+Test Epoch117 layer3 Acc 0.2925, AUC 0.7854730486869812, avg_entr 0.05157977342605591, f1 0.29249998927116394
+ep117_l3_test_time 2.2790762250006082
+gc 0
+Train Epoch118 Acc 0.304615 (60923/200000), AUC 0.7993829250335693
+ep118_train_time 38.86872511599995
+Test Epoch118 layer0 Acc 0.2647, AUC 0.7974975109100342, avg_entr 0.04074040427803993, f1 0.2646999955177307
+ep118_l0_test_time 2.2131710980002026
+Test Epoch118 layer1 Acc 0.2826, AUC 0.7957003712654114, avg_entr 0.048953279852867126, f1 0.2825999855995178
+ep118_l1_test_time 2.1953583080003227
+Test Epoch118 layer2 Acc 0.2943, AUC 0.7779549360275269, avg_entr 0.05743815377354622, f1 0.29429998993873596
+ep118_l2_test_time 2.225377832999584
+Test Epoch118 layer3 Acc 0.2925, AUC 0.7854726314544678, avg_entr 0.05158049240708351, f1 0.29249998927116394
+ep118_l3_test_time 2.237219578000804
+gc 0
+Train Epoch119 Acc 0.30401 (60802/200000), AUC 0.7991654276847839
+ep119_train_time 38.732762857000125
+Test Epoch119 layer0 Acc 0.2647, AUC 0.797497034072876, avg_entr 0.04074051231145859, f1 0.2646999955177307
+ep119_l0_test_time 2.20153169599962
+Test Epoch119 layer1 Acc 0.2826, AUC 0.7957002520561218, avg_entr 0.04895469546318054, f1 0.2825999855995178
+ep119_l1_test_time 2.2152915349997784
+Test Epoch119 layer2 Acc 0.2943, AUC 0.7779554128646851, avg_entr 0.05744008719921112, f1 0.29429998993873596
+ep119_l2_test_time 2.242772362999858
+Test Epoch119 layer3 Acc 0.2925, AUC 0.7854725122451782, avg_entr 0.051581818610429764, f1 0.29249998927116394
+ep119_l3_test_time 2.256351234000249
+gc 0
+Train Epoch120 Acc 0.304245 (60849/200000), AUC 0.7992505431175232
+ep120_train_time 38.74923280400071
+Test Epoch120 layer0 Acc 0.2647, AUC 0.7974966168403625, avg_entr 0.04074094071984291, f1 0.2646999955177307
+ep120_l0_test_time 2.2077080529998057
+Test Epoch120 layer1 Acc 0.2826, AUC 0.7957000732421875, avg_entr 0.04895489662885666, f1 0.2825999855995178
+ep120_l1_test_time 2.2051308250001966
+Test Epoch120 layer2 Acc 0.2942, AUC 0.777955949306488, avg_entr 0.057440705597400665, f1 0.29420000314712524
+ep120_l2_test_time 2.228676462999829
+Test Epoch120 layer3 Acc 0.2926, AUC 0.7854731678962708, avg_entr 0.05158388242125511, f1 0.29260000586509705
+ep120_l3_test_time 2.2293073830005596
+gc 0
+Train Epoch121 Acc 0.30521 (61042/200000), AUC 0.7988778948783875
+ep121_train_time 38.92825072800042
+Test Epoch121 layer0 Acc 0.2648, AUC 0.7974970936775208, avg_entr 0.040743812918663025, f1 0.2648000121116638
+ep121_l0_test_time 2.211774592000438
+Test Epoch121 layer1 Acc 0.2826, AUC 0.7957000732421875, avg_entr 0.04895670339465141, f1 0.2825999855995178
+ep121_l1_test_time 2.207005021000441
+Test Epoch121 layer2 Acc 0.2942, AUC 0.7779549956321716, avg_entr 0.057438597083091736, f1 0.29420000314712524
+ep121_l2_test_time 2.2342840300007083
+Test Epoch121 layer3 Acc 0.2926, AUC 0.7854734063148499, avg_entr 0.051583293825387955, f1 0.29260000586509705
+ep121_l3_test_time 2.2498668049993285
+gc 0
+Train Epoch122 Acc 0.30443 (60886/200000), AUC 0.799228847026825
+ep122_train_time 38.91532129799998
+Test Epoch122 layer0 Acc 0.2647, AUC 0.797497570514679, avg_entr 0.04074493795633316, f1 0.2646999955177307
+ep122_l0_test_time 2.205171020000307
+Test Epoch122 layer1 Acc 0.2826, AUC 0.7957003712654114, avg_entr 0.04895716533064842, f1 0.2825999855995178
+ep122_l1_test_time 2.2093479570003183
+Test Epoch122 layer2 Acc 0.2942, AUC 0.7779542803764343, avg_entr 0.0574406199157238, f1 0.29420000314712524
+ep122_l2_test_time 2.234741786000086
+Test Epoch122 layer3 Acc 0.2926, AUC 0.7854728102684021, avg_entr 0.05158492550253868, f1 0.29260000586509705
+ep122_l3_test_time 2.239761402000113
+gc 0
+Train Epoch123 Acc 0.30582 (61164/200000), AUC 0.7987803816795349
+ep123_train_time 38.823921094999605
+Test Epoch123 layer0 Acc 0.2647, AUC 0.7974972724914551, avg_entr 0.040744855999946594, f1 0.2646999955177307
+ep123_l0_test_time 2.1964521689997127
+Test Epoch123 layer1 Acc 0.2827, AUC 0.7957006096839905, avg_entr 0.04896017909049988, f1 0.2827000021934509
+ep123_l1_test_time 2.2122710630001166
+Test Epoch123 layer2 Acc 0.2942, AUC 0.7779543399810791, avg_entr 0.057444121688604355, f1 0.29420000314712524
+ep123_l2_test_time 2.236343919999854
+Test Epoch123 layer3 Acc 0.2926, AUC 0.7854737043380737, avg_entr 0.05158791318535805, f1 0.29260000586509705
+ep123_l3_test_time 2.2458480840004995
+gc 0
+Train Epoch124 Acc 0.30419 (60838/200000), AUC 0.7991125583648682
+ep124_train_time 38.65187785499984
+Test Epoch124 layer0 Acc 0.2648, AUC 0.797497570514679, avg_entr 0.04074406996369362, f1 0.2648000121116638
+ep124_l0_test_time 2.200520852000409
+Test Epoch124 layer1 Acc 0.2827, AUC 0.7957006692886353, avg_entr 0.04896153137087822, f1 0.2827000021934509
+ep124_l1_test_time 2.1934079880002173
+Test Epoch124 layer2 Acc 0.2942, AUC 0.777953565120697, avg_entr 0.057444605976343155, f1 0.29420000314712524
+ep124_l2_test_time 2.241833236000275
+Test Epoch124 layer3 Acc 0.2926, AUC 0.7854733467102051, avg_entr 0.05158889293670654, f1 0.29260000586509705
+ep124_l3_test_time 2.2332931020000615
+gc 0
+Train Epoch125 Acc 0.304305 (60861/200000), AUC 0.7989284992218018
+ep125_train_time 38.98126100300033
+Test Epoch125 layer0 Acc 0.2648, AUC 0.7974976301193237, avg_entr 0.04074385389685631, f1 0.2648000121116638
+ep125_l0_test_time 2.25374021800053
+Test Epoch125 layer1 Acc 0.2827, AUC 0.7957013845443726, avg_entr 0.048963163048028946, f1 0.2827000021934509
+ep125_l1_test_time 2.2115560450001794
+Test Epoch125 layer2 Acc 0.2942, AUC 0.7779538035392761, avg_entr 0.05744659900665283, f1 0.29420000314712524
+ep125_l2_test_time 2.343893377999848
+Test Epoch125 layer3 Acc 0.2925, AUC 0.7854734659194946, avg_entr 0.05159053951501846, f1 0.29249998927116394
+ep125_l3_test_time 2.2390181340006166
+gc 0
+Train Epoch126 Acc 0.30429 (60858/200000), AUC 0.7991152405738831
+ep126_train_time 38.87077304200011
+Test Epoch126 layer0 Acc 0.2648, AUC 0.7974981665611267, avg_entr 0.04074437916278839, f1 0.2648000121116638
+ep126_l0_test_time 2.2000744040005884
+Test Epoch126 layer1 Acc 0.2827, AUC 0.795701265335083, avg_entr 0.04896342754364014, f1 0.2827000021934509
+ep126_l1_test_time 2.2216914830005408
+Test Epoch126 layer2 Acc 0.2942, AUC 0.7779535055160522, avg_entr 0.05744649097323418, f1 0.29420000314712524
+ep126_l2_test_time 2.2236001089995625
+Test Epoch126 layer3 Acc 0.2925, AUC 0.785472571849823, avg_entr 0.051588963717222214, f1 0.29249998927116394
+ep126_l3_test_time 2.247244543999841
+gc 0
+Train Epoch127 Acc 0.304575 (60915/200000), AUC 0.7994651198387146
+ep127_train_time 38.762451035000595
+Test Epoch127 layer0 Acc 0.2648, AUC 0.7974979877471924, avg_entr 0.04074348136782646, f1 0.2648000121116638
+ep127_l0_test_time 2.196865379999508
+Test Epoch127 layer1 Acc 0.2827, AUC 0.7957016825675964, avg_entr 0.04896225407719612, f1 0.2827000021934509
+ep127_l1_test_time 2.208789660000548
+Test Epoch127 layer2 Acc 0.2943, AUC 0.7779552340507507, avg_entr 0.05744749307632446, f1 0.29429998993873596
+ep127_l2_test_time 2.2319579519999024
+Test Epoch127 layer3 Acc 0.2924, AUC 0.7854732275009155, avg_entr 0.05159075930714607, f1 0.2924000024795532
+ep127_l3_test_time 2.2424939120001
+gc 0
+Train Epoch128 Acc 0.305175 (61035/200000), AUC 0.7992483377456665
+ep128_train_time 38.94156465299966
+Test Epoch128 layer0 Acc 0.2648, AUC 0.7974979281425476, avg_entr 0.04074361175298691, f1 0.2648000121116638
+ep128_l0_test_time 2.194405296999321
+Test Epoch128 layer1 Acc 0.2827, AUC 0.7957004308700562, avg_entr 0.04896267130970955, f1 0.2827000021934509
+ep128_l1_test_time 2.2076037019996875
+Test Epoch128 layer2 Acc 0.2942, AUC 0.7779530882835388, avg_entr 0.05744873732328415, f1 0.29420000314712524
+ep128_l2_test_time 2.227651644000616
+Test Epoch128 layer3 Acc 0.2925, AUC 0.7854723930358887, avg_entr 0.05158805474638939, f1 0.29249998927116394
+ep128_l3_test_time 2.2663904889996047
+gc 0
+Train Epoch129 Acc 0.30453 (60906/200000), AUC 0.7985780239105225
+ep129_train_time 38.85151684700031
+Test Epoch129 layer0 Acc 0.2648, AUC 0.7974984645843506, avg_entr 0.04074662923812866, f1 0.2648000121116638
+ep129_l0_test_time 2.239608221999333
+Test Epoch129 layer1 Acc 0.2827, AUC 0.7957006692886353, avg_entr 0.04896385595202446, f1 0.2827000021934509
+ep129_l1_test_time 2.253526399999828
+Test Epoch129 layer2 Acc 0.2942, AUC 0.7779539227485657, avg_entr 0.05744821950793266, f1 0.29420000314712524
+ep129_l2_test_time 2.230774483999994
+Test Epoch129 layer3 Acc 0.2925, AUC 0.7854720950126648, avg_entr 0.05158768966794014, f1 0.29249998927116394
+ep129_l3_test_time 2.2332500900001833
+gc 0
+Train Epoch130 Acc 0.305665 (61133/200000), AUC 0.7996137142181396
+ep130_train_time 39.04825540299953
+Test Epoch130 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.040746528655290604, f1 0.2648000121116638
+ep130_l0_test_time 2.239828464999846
+Test Epoch130 layer1 Acc 0.2827, AUC 0.7957006692886353, avg_entr 0.04896467924118042, f1 0.2827000021934509
+ep130_l1_test_time 2.2080000570003904
+Test Epoch130 layer2 Acc 0.2942, AUC 0.7779548764228821, avg_entr 0.05744832754135132, f1 0.29420000314712524
+ep130_l2_test_time 2.3526609390000885
+Test Epoch130 layer3 Acc 0.2925, AUC 0.7854728102684021, avg_entr 0.051588524132966995, f1 0.29249998927116394
+ep130_l3_test_time 2.2789849630007666
+gc 0
+Train Epoch131 Acc 0.30475 (60950/200000), AUC 0.7991350293159485
+ep131_train_time 38.78120011400006
+Test Epoch131 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.04074824973940849, f1 0.2648000121116638
+ep131_l0_test_time 2.239409261000219
+Test Epoch131 layer1 Acc 0.2827, AUC 0.7957002520561218, avg_entr 0.04896624758839607, f1 0.2827000021934509
+ep131_l1_test_time 2.2160423949999313
+Test Epoch131 layer2 Acc 0.2942, AUC 0.7779549360275269, avg_entr 0.05745117366313934, f1 0.29420000314712524
+ep131_l2_test_time 2.2268277450002643
+Test Epoch131 layer3 Acc 0.2925, AUC 0.7854721546173096, avg_entr 0.0515899658203125, f1 0.29249998927116394
+ep131_l3_test_time 2.2662876289996348
+gc 0
+Train Epoch132 Acc 0.304905 (60981/200000), AUC 0.7993686199188232
+ep132_train_time 38.810797738000474
+Test Epoch132 layer0 Acc 0.2648, AUC 0.7974987030029297, avg_entr 0.040749695152044296, f1 0.2648000121116638
+ep132_l0_test_time 2.202003529000649
+Test Epoch132 layer1 Acc 0.2827, AUC 0.7957002520561218, avg_entr 0.048969022929668427, f1 0.2827000021934509
+ep132_l1_test_time 2.2145582879993526
+Test Epoch132 layer2 Acc 0.2943, AUC 0.7779548764228821, avg_entr 0.05745147541165352, f1 0.29429998993873596
+ep132_l2_test_time 2.229576697000084
+Test Epoch132 layer3 Acc 0.2926, AUC 0.7854717969894409, avg_entr 0.051590144634246826, f1 0.29260000586509705
+ep132_l3_test_time 2.2413083800001914
+gc 0
+Train Epoch133 Acc 0.303595 (60719/200000), AUC 0.7989016175270081
+ep133_train_time 38.97174124100002
+Test Epoch133 layer0 Acc 0.2648, AUC 0.7974981665611267, avg_entr 0.04074966534972191, f1 0.2648000121116638
+ep133_l0_test_time 2.2295364409992544
+Test Epoch133 layer1 Acc 0.2827, AUC 0.7957006692886353, avg_entr 0.04897017031908035, f1 0.2827000021934509
+ep133_l1_test_time 2.2034021200006464
+Test Epoch133 layer2 Acc 0.2942, AUC 0.7779552340507507, avg_entr 0.057454027235507965, f1 0.29420000314712524
+ep133_l2_test_time 2.2152382929998566
+Test Epoch133 layer3 Acc 0.2925, AUC 0.7854730486869812, avg_entr 0.05159351974725723, f1 0.29249998927116394
+ep133_l3_test_time 2.2412932429997454
+gc 0
+Train Epoch134 Acc 0.30522 (61044/200000), AUC 0.7994014620780945
+ep134_train_time 38.854128750999735
+Test Epoch134 layer0 Acc 0.2648, AUC 0.7974994778633118, avg_entr 0.0407489575445652, f1 0.2648000121116638
+ep134_l0_test_time 2.2149106670003675
+Test Epoch134 layer1 Acc 0.2827, AUC 0.7957007884979248, avg_entr 0.04896844923496246, f1 0.2827000021934509
+ep134_l1_test_time 2.211799960999997
+Test Epoch134 layer2 Acc 0.2942, AUC 0.777955949306488, avg_entr 0.05745203420519829, f1 0.29420000314712524
+ep134_l2_test_time 2.236852424999597
+Test Epoch134 layer3 Acc 0.2925, AUC 0.7854721546173096, avg_entr 0.05159233883023262, f1 0.29249998927116394
+ep134_l3_test_time 2.2518763179996313
+gc 0
+Train Epoch135 Acc 0.303135 (60627/200000), AUC 0.7993515133857727
+ep135_train_time 39.00549549399966
+Test Epoch135 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.040748048573732376, f1 0.2648000121116638
+ep135_l0_test_time 2.24187625400009
+Test Epoch135 layer1 Acc 0.2827, AUC 0.7957009077072144, avg_entr 0.04896858334541321, f1 0.2827000021934509
+ep135_l1_test_time 2.224281109000003
+Test Epoch135 layer2 Acc 0.2943, AUC 0.7779558300971985, avg_entr 0.05745047703385353, f1 0.29429998993873596
+ep135_l2_test_time 2.231834371000332
+Test Epoch135 layer3 Acc 0.2924, AUC 0.7854722738265991, avg_entr 0.05159120634198189, f1 0.2924000024795532
+ep135_l3_test_time 2.2708092940001734
+gc 0
+Train Epoch136 Acc 0.30458 (60916/200000), AUC 0.7988005876541138
+ep136_train_time 38.85935242600044
+Test Epoch136 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.040748391300439835, f1 0.2648000121116638
+ep136_l0_test_time 2.2056184769999163
+Test Epoch136 layer1 Acc 0.2827, AUC 0.7957016229629517, avg_entr 0.048968035727739334, f1 0.2827000021934509
+ep136_l1_test_time 2.204516116999912
+Test Epoch136 layer2 Acc 0.2943, AUC 0.7779554128646851, avg_entr 0.05744951218366623, f1 0.29429998993873596
+ep136_l2_test_time 2.2532643009999447
+Test Epoch136 layer3 Acc 0.2925, AUC 0.7854713201522827, avg_entr 0.05159090459346771, f1 0.29249998927116394
+ep136_l3_test_time 2.232652842999414
+gc 0
+Train Epoch137 Acc 0.304495 (60899/200000), AUC 0.7993602156639099
+ep137_train_time 38.92146451099961
+Test Epoch137 layer0 Acc 0.2648, AUC 0.7974982261657715, avg_entr 0.04074941202998161, f1 0.2648000121116638
+ep137_l0_test_time 2.2328376659997957
+Test Epoch137 layer1 Acc 0.2827, AUC 0.7957014441490173, avg_entr 0.04896858334541321, f1 0.2827000021934509
+ep137_l1_test_time 2.2068141830004606
+Test Epoch137 layer2 Acc 0.2943, AUC 0.7779549956321716, avg_entr 0.05745024234056473, f1 0.29429998993873596
+ep137_l2_test_time 2.2647531860002346
+Test Epoch137 layer3 Acc 0.2925, AUC 0.7854717969894409, avg_entr 0.05159062519669533, f1 0.29249998927116394
+ep137_l3_test_time 2.2580906590001177
+gc 0
+Train Epoch138 Acc 0.304035 (60807/200000), AUC 0.7997687458992004
+ep138_train_time 38.91700765599944
+Test Epoch138 layer0 Acc 0.2648, AUC 0.7974991798400879, avg_entr 0.04075048491358757, f1 0.2648000121116638
+ep138_l0_test_time 2.2265107169996554
+Test Epoch138 layer1 Acc 0.2827, AUC 0.7957014441490173, avg_entr 0.04896973446011543, f1 0.2827000021934509
+ep138_l1_test_time 2.2047840199993516
+Test Epoch138 layer2 Acc 0.2942, AUC 0.7779567241668701, avg_entr 0.05745118856430054, f1 0.29420000314712524
+ep138_l2_test_time 2.2327680230000624
+Test Epoch138 layer3 Acc 0.2925, AUC 0.7854719758033752, avg_entr 0.05158931761980057, f1 0.29249998927116394
+ep138_l3_test_time 2.2763319169998795
+gc 0
+Train Epoch139 Acc 0.30502 (61004/200000), AUC 0.799262285232544
+ep139_train_time 38.76465031400039
+Test Epoch139 layer0 Acc 0.2648, AUC 0.797498881816864, avg_entr 0.04075087979435921, f1 0.2648000121116638
+ep139_l0_test_time 2.2004714999993666
+Test Epoch139 layer1 Acc 0.2827, AUC 0.7957011461257935, avg_entr 0.048969514667987823, f1 0.2827000021934509
+ep139_l1_test_time 2.1992777380000916
+Test Epoch139 layer2 Acc 0.2943, AUC 0.7779563665390015, avg_entr 0.057452622801065445, f1 0.29429998993873596
+ep139_l2_test_time 2.25588814799994
+Test Epoch139 layer3 Acc 0.2925, AUC 0.7854726314544678, avg_entr 0.051591046154499054, f1 0.29249998927116394
+ep139_l3_test_time 2.2242087959994024
+gc 0
+Train Epoch140 Acc 0.303305 (60661/200000), AUC 0.7985139489173889
+ep140_train_time 38.83109670799968
+Test Epoch140 layer0 Acc 0.2648, AUC 0.7974989414215088, avg_entr 0.04075081646442413, f1 0.2648000121116638
+ep140_l0_test_time 2.2274975330001325
+Test Epoch140 layer1 Acc 0.2827, AUC 0.7957012057304382, avg_entr 0.04896930605173111, f1 0.2827000021934509
+ep140_l1_test_time 2.2047423730000446
+Test Epoch140 layer2 Acc 0.2943, AUC 0.7779557108879089, avg_entr 0.057453349232673645, f1 0.29429998993873596
+ep140_l2_test_time 2.247299703999488
+Test Epoch140 layer3 Acc 0.2925, AUC 0.7854709625244141, avg_entr 0.05159064382314682, f1 0.29249998927116394
+ep140_l3_test_time 2.2412896839996392
+gc 0
+Train Epoch141 Acc 0.304835 (60967/200000), AUC 0.7989445328712463
+ep141_train_time 38.977913723999336
+Test Epoch141 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.040750790387392044, f1 0.2648000121116638
+ep141_l0_test_time 2.213897515000099
+Test Epoch141 layer1 Acc 0.2827, AUC 0.7957012057304382, avg_entr 0.04897167906165123, f1 0.2827000021934509
+ep141_l1_test_time 2.1975488369998857
+Test Epoch141 layer2 Acc 0.2944, AUC 0.7779565453529358, avg_entr 0.05745350196957588, f1 0.29440000653266907
+ep141_l2_test_time 2.2237684290003017
+Test Epoch141 layer3 Acc 0.2925, AUC 0.7854707837104797, avg_entr 0.0515916608273983, f1 0.29249998927116394
+ep141_l3_test_time 2.2711834729998372
+gc 0
+Train Epoch142 Acc 0.30446 (60892/200000), AUC 0.7990754842758179
+ep142_train_time 38.879410208999616
+Test Epoch142 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.04075086861848831, f1 0.2648000121116638
+ep142_l0_test_time 2.2085559320003085
+Test Epoch142 layer1 Acc 0.2827, AUC 0.7957014441490173, avg_entr 0.04897105693817139, f1 0.2827000021934509
+ep142_l1_test_time 2.1923690080002416
+Test Epoch142 layer2 Acc 0.2944, AUC 0.7779557108879089, avg_entr 0.057453498244285583, f1 0.29440000653266907
+ep142_l2_test_time 2.229957738999474
+Test Epoch142 layer3 Acc 0.2925, AUC 0.7854710221290588, avg_entr 0.05159199982881546, f1 0.29249998927116394
+ep142_l3_test_time 2.2437724329993216
+gc 0
+Train Epoch143 Acc 0.304395 (60879/200000), AUC 0.7990455627441406
+ep143_train_time 38.81993593799962
+Test Epoch143 layer0 Acc 0.2648, AUC 0.797499418258667, avg_entr 0.04075247049331665, f1 0.2648000121116638
+ep143_l0_test_time 2.213701468000181
+Test Epoch143 layer1 Acc 0.2827, AUC 0.7957022190093994, avg_entr 0.04897252842783928, f1 0.2827000021934509
+ep143_l1_test_time 2.2615328359997875
+Test Epoch143 layer2 Acc 0.2944, AUC 0.7779554724693298, avg_entr 0.057452715933322906, f1 0.29440000653266907
+ep143_l2_test_time 2.249514504999752
+Test Epoch143 layer3 Acc 0.2925, AUC 0.7854715585708618, avg_entr 0.05159081891179085, f1 0.29249998927116394
+ep143_l3_test_time 2.2769629969998277
+gc 0
+Train Epoch144 Acc 0.304215 (60843/200000), AUC 0.7989130616188049
+ep144_train_time 38.6890952370004
+Test Epoch144 layer0 Acc 0.2648, AUC 0.7974995374679565, avg_entr 0.04075148329138756, f1 0.2648000121116638
+ep144_l0_test_time 2.2428997630004233
+Test Epoch144 layer1 Acc 0.2827, AUC 0.7957025170326233, avg_entr 0.04897089675068855, f1 0.2827000021934509
+ep144_l1_test_time 2.244069846000457
+Test Epoch144 layer2 Acc 0.2944, AUC 0.7779558300971985, avg_entr 0.05745171010494232, f1 0.29440000653266907
+ep144_l2_test_time 2.2246571290006614
+Test Epoch144 layer3 Acc 0.2925, AUC 0.7854715585708618, avg_entr 0.05159015953540802, f1 0.29249998927116394
+ep144_l3_test_time 2.241996243000358
+gc 0
+Train Epoch145 Acc 0.30344 (60688/200000), AUC 0.7986874580383301
+ep145_train_time 38.92520028400031
+Test Epoch145 layer0 Acc 0.2648, AUC 0.7975003123283386, avg_entr 0.040749695152044296, f1 0.2648000121116638
+ep145_l0_test_time 2.19694679299937
+Test Epoch145 layer1 Acc 0.2827, AUC 0.7957019805908203, avg_entr 0.048969000577926636, f1 0.2827000021934509
+ep145_l1_test_time 2.1994467470003656
+Test Epoch145 layer2 Acc 0.2943, AUC 0.7779551148414612, avg_entr 0.057452112436294556, f1 0.29429998993873596
+ep145_l2_test_time 2.2311846049997257
+Test Epoch145 layer3 Acc 0.2925, AUC 0.7854713201522827, avg_entr 0.051592521369457245, f1 0.29249998927116394
+ep145_l3_test_time 2.2547986239997044
+gc 0
+Train Epoch146 Acc 0.303365 (60673/200000), AUC 0.7989782691001892
+ep146_train_time 38.89192020599967
+Test Epoch146 layer0 Acc 0.2648, AUC 0.797499418258667, avg_entr 0.04074857383966446, f1 0.2648000121116638
+ep146_l0_test_time 2.200678188999518
+Test Epoch146 layer1 Acc 0.2827, AUC 0.7957021594047546, avg_entr 0.04896760359406471, f1 0.2827000021934509
+ep146_l1_test_time 2.2075193669998043
+Test Epoch146 layer2 Acc 0.2943, AUC 0.7779545783996582, avg_entr 0.05745047703385353, f1 0.29429998993873596
+ep146_l2_test_time 2.2399989400000777
+Test Epoch146 layer3 Acc 0.2925, AUC 0.7854695916175842, avg_entr 0.05158966779708862, f1 0.29249998927116394
+ep146_l3_test_time 2.242455414999313
+gc 0
+Train Epoch147 Acc 0.30416 (60832/200000), AUC 0.7987315654754639
+ep147_train_time 38.85813356500057
+Test Epoch147 layer0 Acc 0.2648, AUC 0.7974990010261536, avg_entr 0.04074965417385101, f1 0.2648000121116638
+ep147_l0_test_time 2.262935892999849
+Test Epoch147 layer1 Acc 0.2827, AUC 0.7957022190093994, avg_entr 0.04896844923496246, f1 0.2827000021934509
+ep147_l1_test_time 2.203025906000221
+Test Epoch147 layer2 Acc 0.2944, AUC 0.7779549956321716, avg_entr 0.05745340511202812, f1 0.29440000653266907
+ep147_l2_test_time 2.2388560409999627
+Test Epoch147 layer3 Acc 0.2926, AUC 0.7854694128036499, avg_entr 0.05159182846546173, f1 0.29260000586509705
+ep147_l3_test_time 2.2454690449994814
+gc 0
+Train Epoch148 Acc 0.304585 (60917/200000), AUC 0.7986277937889099
+ep148_train_time 38.94256321099965
+Test Epoch148 layer0 Acc 0.2648, AUC 0.7974992990493774, avg_entr 0.04074990376830101, f1 0.2648000121116638
+ep148_l0_test_time 2.2267304090000835
+Test Epoch148 layer1 Acc 0.2827, AUC 0.7957024574279785, avg_entr 0.048968054354190826, f1 0.2827000021934509
+ep148_l1_test_time 2.2170871339994846
+Test Epoch148 layer2 Acc 0.2944, AUC 0.7779546976089478, avg_entr 0.05745331570506096, f1 0.29440000653266907
+ep148_l2_test_time 2.225226401999862
+Test Epoch148 layer3 Acc 0.2925, AUC 0.7854695320129395, avg_entr 0.05159320682287216, f1 0.29249998927116394
+ep148_l3_test_time 2.2537251220001053
+gc 0
+Train Epoch149 Acc 0.30415 (60830/200000), AUC 0.7989777326583862
+ep149_train_time 39.05432963000021
+Test Epoch149 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.04074849188327789, f1 0.2648000121116638
+ep149_l0_test_time 2.2363507679992836
+Test Epoch149 layer1 Acc 0.2827, AUC 0.7957021594047546, avg_entr 0.04896670579910278, f1 0.2827000021934509
+ep149_l1_test_time 2.2389695809997647
+Test Epoch149 layer2 Acc 0.2943, AUC 0.7779548168182373, avg_entr 0.05745316296815872, f1 0.29429998993873596
+ep149_l2_test_time 2.246372665000308
+Test Epoch149 layer3 Acc 0.2926, AUC 0.7854699492454529, avg_entr 0.051594074815511703, f1 0.29260000586509705
+ep149_l3_test_time 2.253345084999637
+gc 0
+Train Epoch150 Acc 0.305085 (61017/200000), AUC 0.7993337512016296
+ep150_train_time 38.7782305540004
+Test Epoch150 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.040749091655015945, f1 0.2648000121116638
+ep150_l0_test_time 2.206569932000093
+Test Epoch150 layer1 Acc 0.2827, AUC 0.795701801776886, avg_entr 0.048966992646455765, f1 0.2827000021934509
+ep150_l1_test_time 2.206367088000661
+Test Epoch150 layer2 Acc 0.2943, AUC 0.7779548764228821, avg_entr 0.057453516870737076, f1 0.29429998993873596
+ep150_l2_test_time 2.2389808289999564
+Test Epoch150 layer3 Acc 0.2926, AUC 0.7854699492454529, avg_entr 0.05159303545951843, f1 0.29260000586509705
+ep150_l3_test_time 2.2776629060008418
+gc 0
+Train Epoch151 Acc 0.304715 (60943/200000), AUC 0.7986904978752136
+ep151_train_time 39.076454897000076
+Test Epoch151 layer0 Acc 0.2648, AUC 0.7974987030029297, avg_entr 0.040748197585344315, f1 0.2648000121116638
+ep151_l0_test_time 2.2210690770007204
+Test Epoch151 layer1 Acc 0.2827, AUC 0.7957016229629517, avg_entr 0.0489652119576931, f1 0.2827000021934509
+ep151_l1_test_time 2.2171122789995934
+Test Epoch151 layer2 Acc 0.2943, AUC 0.7779548764228821, avg_entr 0.057452429085969925, f1 0.29429998993873596
+ep151_l2_test_time 2.2456175970000913
+Test Epoch151 layer3 Acc 0.2926, AUC 0.7854701280593872, avg_entr 0.05159397050738335, f1 0.29260000586509705
+ep151_l3_test_time 2.238999070000318
+gc 0
+Train Epoch152 Acc 0.30531 (61062/200000), AUC 0.7990817427635193
+ep152_train_time 38.779922901000646
+Test Epoch152 layer0 Acc 0.2648, AUC 0.797498881816864, avg_entr 0.04074817895889282, f1 0.2648000121116638
+ep152_l0_test_time 2.2172196819992678
+Test Epoch152 layer1 Acc 0.2826, AUC 0.7957015037536621, avg_entr 0.048965781927108765, f1 0.2825999855995178
+ep152_l1_test_time 2.219677467999645
+Test Epoch152 layer2 Acc 0.2943, AUC 0.7779536247253418, avg_entr 0.057453595101833344, f1 0.29429998993873596
+ep152_l2_test_time 2.2382191440001407
+Test Epoch152 layer3 Acc 0.2926, AUC 0.7854693531990051, avg_entr 0.051594365388154984, f1 0.29260000586509705
+ep152_l3_test_time 2.2567214399996374
+gc 0
+Train Epoch153 Acc 0.304985 (60997/200000), AUC 0.7994707226753235
+ep153_train_time 38.98543699699985
+Test Epoch153 layer0 Acc 0.2648, AUC 0.797498881816864, avg_entr 0.04074927791953087, f1 0.2648000121116638
+ep153_l0_test_time 2.2067249260007884
+Test Epoch153 layer1 Acc 0.2826, AUC 0.7957016229629517, avg_entr 0.04896697774529457, f1 0.2825999855995178
+ep153_l1_test_time 2.2429023570002755
+Test Epoch153 layer2 Acc 0.2943, AUC 0.777954638004303, avg_entr 0.05745524913072586, f1 0.29429998993873596
+ep153_l2_test_time 2.226098072000241
+Test Epoch153 layer3 Acc 0.2924, AUC 0.7854711413383484, avg_entr 0.051595788449048996, f1 0.2924000024795532
+ep153_l3_test_time 2.2559249730002193
+gc 0
+Train Epoch154 Acc 0.30428 (60856/200000), AUC 0.7987870573997498
+ep154_train_time 38.89305801299997
+Test Epoch154 layer0 Acc 0.2648, AUC 0.797498881816864, avg_entr 0.040748585015535355, f1 0.2648000121116638
+ep154_l0_test_time 2.2098613809994276
+Test Epoch154 layer1 Acc 0.2826, AUC 0.7957009673118591, avg_entr 0.04896458610892296, f1 0.2825999855995178
+ep154_l1_test_time 2.198447189000035
+Test Epoch154 layer2 Acc 0.2943, AUC 0.7779552936553955, avg_entr 0.05745188146829605, f1 0.29429998993873596
+ep154_l2_test_time 2.23155809400032
+Test Epoch154 layer3 Acc 0.2926, AUC 0.7854714393615723, avg_entr 0.05159129574894905, f1 0.29260000586509705
+ep154_l3_test_time 2.2803276619997632
+gc 0
+Train Epoch155 Acc 0.304635 (60927/200000), AUC 0.7987686395645142
+ep155_train_time 38.780423875999986
+Test Epoch155 layer0 Acc 0.2648, AUC 0.797498881816864, avg_entr 0.04074825718998909, f1 0.2648000121116638
+ep155_l0_test_time 2.2189291490003598
+Test Epoch155 layer1 Acc 0.2827, AUC 0.795701265335083, avg_entr 0.04896504059433937, f1 0.2827000021934509
+ep155_l1_test_time 2.2355279570001585
+Test Epoch155 layer2 Acc 0.2943, AUC 0.7779557704925537, avg_entr 0.05745344236493111, f1 0.29429998993873596
+ep155_l2_test_time 2.2642682319992673
+Test Epoch155 layer3 Acc 0.2926, AUC 0.7854718565940857, avg_entr 0.05159154534339905, f1 0.29260000586509705
+ep155_l3_test_time 2.2826489369999763
+gc 0
+Train Epoch156 Acc 0.3049 (60980/200000), AUC 0.7990853190422058
+ep156_train_time 38.93629736599996
+Test Epoch156 layer0 Acc 0.2648, AUC 0.7974989414215088, avg_entr 0.040750596672296524, f1 0.2648000121116638
+ep156_l0_test_time 2.2678999190002287
+Test Epoch156 layer1 Acc 0.2826, AUC 0.7957019209861755, avg_entr 0.04896781966090202, f1 0.2825999855995178
+ep156_l1_test_time 2.220700200000465
+Test Epoch156 layer2 Acc 0.2943, AUC 0.7779554128646851, avg_entr 0.05745552480220795, f1 0.29429998993873596
+ep156_l2_test_time 2.245933690000129
+Test Epoch156 layer3 Acc 0.2926, AUC 0.785473108291626, avg_entr 0.05159309506416321, f1 0.29260000586509705
+ep156_l3_test_time 2.254953112000294
+gc 0
+Train Epoch157 Acc 0.306115 (61223/200000), AUC 0.7994740009307861
+ep157_train_time 38.86910150299991
+Test Epoch157 layer0 Acc 0.2648, AUC 0.797499418258667, avg_entr 0.04075143486261368, f1 0.2648000121116638
+ep157_l0_test_time 2.2219228310004837
+Test Epoch157 layer1 Acc 0.2826, AUC 0.7957019805908203, avg_entr 0.04896795377135277, f1 0.2825999855995178
+ep157_l1_test_time 2.2134622940002373
+Test Epoch157 layer2 Acc 0.2943, AUC 0.7779567837715149, avg_entr 0.05745651200413704, f1 0.29429998993873596
+ep157_l2_test_time 2.243048593999447
+Test Epoch157 layer3 Acc 0.2926, AUC 0.7854728698730469, avg_entr 0.05159464851021767, f1 0.29260000586509705
+ep157_l3_test_time 2.258622999999716
+gc 0
+Train Epoch158 Acc 0.304775 (60955/200000), AUC 0.7986674308776855
+ep158_train_time 38.72238340900003
+Test Epoch158 layer0 Acc 0.2648, AUC 0.797499418258667, avg_entr 0.040752116590738297, f1 0.2648000121116638
+ep158_l0_test_time 2.2205234030006977
+Test Epoch158 layer1 Acc 0.2826, AUC 0.7957025766372681, avg_entr 0.04896910488605499, f1 0.2825999855995178
+ep158_l1_test_time 2.248240321000594
+Test Epoch158 layer2 Acc 0.2943, AUC 0.7779567241668701, avg_entr 0.05745584890246391, f1 0.29429998993873596
+ep158_l2_test_time 2.256076898000174
+Test Epoch158 layer3 Acc 0.2926, AUC 0.785472571849823, avg_entr 0.051594287157058716, f1 0.29260000586509705
+ep158_l3_test_time 2.2429421719998572
+gc 0
+Train Epoch159 Acc 0.30442 (60884/200000), AUC 0.7994750738143921
+ep159_train_time 38.81731691499954
+Test Epoch159 layer0 Acc 0.2648, AUC 0.7974995970726013, avg_entr 0.04075077921152115, f1 0.2648000121116638
+ep159_l0_test_time 2.2693525920003594
+Test Epoch159 layer1 Acc 0.2826, AUC 0.7957030534744263, avg_entr 0.04896765202283859, f1 0.2825999855995178
+ep159_l1_test_time 2.2058802539995668
+Test Epoch159 layer2 Acc 0.2943, AUC 0.7779565453529358, avg_entr 0.057455383241176605, f1 0.29429998993873596
+ep159_l2_test_time 2.2374475090000487
+Test Epoch159 layer3 Acc 0.2926, AUC 0.7854729294776917, avg_entr 0.05159508064389229, f1 0.29260000586509705
+ep159_l3_test_time 2.2583282249997865
+gc 0
+Train Epoch160 Acc 0.30438 (60876/200000), AUC 0.7982218861579895
+ep160_train_time 38.7884787160001
+Test Epoch160 layer0 Acc 0.2648, AUC 0.7974997162818909, avg_entr 0.040751416236162186, f1 0.2648000121116638
+ep160_l0_test_time 2.259364190999804
+Test Epoch160 layer1 Acc 0.2826, AUC 0.7957028150558472, avg_entr 0.04896784946322441, f1 0.2825999855995178
+ep160_l1_test_time 2.198830769999404
+Test Epoch160 layer2 Acc 0.2943, AUC 0.7779563665390015, avg_entr 0.05745681747794151, f1 0.29429998993873596
+ep160_l2_test_time 2.2211184779998803
+Test Epoch160 layer3 Acc 0.2926, AUC 0.7854723334312439, avg_entr 0.05159446969628334, f1 0.29260000586509705
+ep160_l3_test_time 2.2465257249996284
+gc 0
+Train Epoch161 Acc 0.30336 (60672/200000), AUC 0.7987851500511169
+ep161_train_time 38.651372764999905
+Test Epoch161 layer0 Acc 0.2648, AUC 0.7974994778633118, avg_entr 0.040750984102487564, f1 0.2648000121116638
+ep161_l0_test_time 2.2092944280002484
+Test Epoch161 layer1 Acc 0.2826, AUC 0.7957026958465576, avg_entr 0.04896695539355278, f1 0.2825999855995178
+ep161_l1_test_time 2.2690943059997153
+Test Epoch161 layer2 Acc 0.2943, AUC 0.7779562473297119, avg_entr 0.057458240538835526, f1 0.29429998993873596
+ep161_l2_test_time 2.223167089000526
+Test Epoch161 layer3 Acc 0.2926, AUC 0.785471498966217, avg_entr 0.05159379914402962, f1 0.29260000586509705
+ep161_l3_test_time 2.3051475599995683
+gc 0
+Train Epoch162 Acc 0.30413 (60826/200000), AUC 0.7990964651107788
+ep162_train_time 39.05227758399997
+Test Epoch162 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.040748920291662216, f1 0.2648000121116638
+ep162_l0_test_time 2.2306389730001683
+Test Epoch162 layer1 Acc 0.2826, AUC 0.7957030534744263, avg_entr 0.048964664340019226, f1 0.2825999855995178
+ep162_l1_test_time 2.1916486860000077
+Test Epoch162 layer2 Acc 0.2943, AUC 0.7779557108879089, avg_entr 0.057454247027635574, f1 0.29429998993873596
+ep162_l2_test_time 2.253168263000589
+Test Epoch162 layer3 Acc 0.2926, AUC 0.7854728698730469, avg_entr 0.05159121751785278, f1 0.29260000586509705
+ep162_l3_test_time 2.2327657260002525
+gc 0
+Train Epoch163 Acc 0.30491 (60982/200000), AUC 0.7987281084060669
+ep163_train_time 38.874853442999665
+Test Epoch163 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.04074930399656296, f1 0.2648000121116638
+ep163_l0_test_time 2.255332187000022
+Test Epoch163 layer1 Acc 0.2826, AUC 0.7957028746604919, avg_entr 0.04896535351872444, f1 0.2825999855995178
+ep163_l1_test_time 2.209469650000756
+Test Epoch163 layer2 Acc 0.2943, AUC 0.7779563665390015, avg_entr 0.057455968111753464, f1 0.29429998993873596
+ep163_l2_test_time 2.242837199999485
+Test Epoch163 layer3 Acc 0.2926, AUC 0.785473108291626, avg_entr 0.051590245217084885, f1 0.29260000586509705
+ep163_l3_test_time 2.260004912000113
+gc 0
+Train Epoch164 Acc 0.305155 (61031/200000), AUC 0.7993693351745605
+ep164_train_time 38.897640974999376
+Test Epoch164 layer0 Acc 0.2648, AUC 0.7975002527236938, avg_entr 0.040749698877334595, f1 0.2648000121116638
+ep164_l0_test_time 2.21819636500004
+Test Epoch164 layer1 Acc 0.2826, AUC 0.7957035899162292, avg_entr 0.04896543174982071, f1 0.2825999855995178
+ep164_l1_test_time 2.2038683499995386
+Test Epoch164 layer2 Acc 0.2943, AUC 0.7779560685157776, avg_entr 0.05745570734143257, f1 0.29429998993873596
+ep164_l2_test_time 2.303371141999378
+Test Epoch164 layer3 Acc 0.2927, AUC 0.7854734063148499, avg_entr 0.05158858001232147, f1 0.29269999265670776
+ep164_l3_test_time 2.2361389389998294
+gc 0
+Train Epoch165 Acc 0.304985 (60997/200000), AUC 0.7989550232887268
+ep165_train_time 38.92387866700028
+Test Epoch165 layer0 Acc 0.2648, AUC 0.7975000739097595, avg_entr 0.040750760585069656, f1 0.2648000121116638
+ep165_l0_test_time 2.245800403999965
+Test Epoch165 layer1 Acc 0.2826, AUC 0.7957038283348083, avg_entr 0.04896576702594757, f1 0.2825999855995178
+ep165_l1_test_time 2.2884464819999266
+Test Epoch165 layer2 Acc 0.2943, AUC 0.7779568433761597, avg_entr 0.05745583400130272, f1 0.29429998993873596
+ep165_l2_test_time 2.2317534570001953
+Test Epoch165 layer3 Acc 0.2927, AUC 0.7854747772216797, avg_entr 0.05159077048301697, f1 0.29269999265670776
+ep165_l3_test_time 2.252379968999776
+gc 0
+Train Epoch166 Acc 0.30431 (60862/200000), AUC 0.7991474270820618
+ep166_train_time 38.86369723700045
+Test Epoch166 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.040750302374362946, f1 0.2648000121116638
+ep166_l0_test_time 2.2519977580004706
+Test Epoch166 layer1 Acc 0.2826, AUC 0.795703649520874, avg_entr 0.04896504059433937, f1 0.2825999855995178
+ep166_l1_test_time 2.2050400829994032
+Test Epoch166 layer2 Acc 0.2943, AUC 0.7779560685157776, avg_entr 0.05745600536465645, f1 0.29429998993873596
+ep166_l2_test_time 2.2301561399999628
+Test Epoch166 layer3 Acc 0.2927, AUC 0.7854734659194946, avg_entr 0.051589470356702805, f1 0.29269999265670776
+ep166_l3_test_time 2.2437371220003115
+gc 0
+Train Epoch167 Acc 0.30474 (60948/200000), AUC 0.7985097765922546
+ep167_train_time 38.75114963800024
+Test Epoch167 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.040750641375780106, f1 0.2648000121116638
+ep167_l0_test_time 2.2952766869993866
+Test Epoch167 layer1 Acc 0.2826, AUC 0.7957038879394531, avg_entr 0.04896562546491623, f1 0.2825999855995178
+ep167_l1_test_time 2.2200761989997773
+Test Epoch167 layer2 Acc 0.2943, AUC 0.7779567837715149, avg_entr 0.05745621770620346, f1 0.29429998993873596
+ep167_l2_test_time 2.258696457000042
+Test Epoch167 layer3 Acc 0.2927, AUC 0.7854726910591125, avg_entr 0.05158960446715355, f1 0.29269999265670776
+ep167_l3_test_time 2.312206884999796
+gc 0
+Train Epoch168 Acc 0.305215 (61043/200000), AUC 0.7992665767669678
+ep168_train_time 38.79855460300041
+Test Epoch168 layer0 Acc 0.2648, AUC 0.7975000143051147, avg_entr 0.040752604603767395, f1 0.2648000121116638
+ep168_l0_test_time 2.187264521000543
+Test Epoch168 layer1 Acc 0.2826, AUC 0.7957040667533875, avg_entr 0.04896675422787666, f1 0.2825999855995178
+ep168_l1_test_time 2.210268088000703
+Test Epoch168 layer2 Acc 0.2943, AUC 0.7779549956321716, avg_entr 0.05745625123381615, f1 0.29429998993873596
+ep168_l2_test_time 2.2168005059993448
+Test Epoch168 layer3 Acc 0.2927, AUC 0.7854719758033752, avg_entr 0.05159002169966698, f1 0.29269999265670776
+ep168_l3_test_time 2.2289824770005
+gc 0
+Train Epoch169 Acc 0.304995 (60999/200000), AUC 0.7997638583183289
+ep169_train_time 39.00958883800013
+Test Epoch169 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.04075130447745323, f1 0.2648000121116638
+ep169_l0_test_time 2.2051715130000957
+Test Epoch169 layer1 Acc 0.2826, AUC 0.7957046031951904, avg_entr 0.048967353999614716, f1 0.2825999855995178
+ep169_l1_test_time 2.2124332350003897
+Test Epoch169 layer2 Acc 0.2943, AUC 0.7779567837715149, avg_entr 0.057458508759737015, f1 0.29429998993873596
+ep169_l2_test_time 2.2370363629997883
+Test Epoch169 layer3 Acc 0.2927, AUC 0.7854734659194946, avg_entr 0.05159151181578636, f1 0.29269999265670776
+ep169_l3_test_time 2.2400924120001946
+gc 0
+Train Epoch170 Acc 0.30369 (60738/200000), AUC 0.7992237210273743
+ep170_train_time 39.03583075900042
+Test Epoch170 layer0 Acc 0.2648, AUC 0.7975006699562073, avg_entr 0.04074917733669281, f1 0.2648000121116638
+ep170_l0_test_time 2.1986923550002757
+Test Epoch170 layer1 Acc 0.2826, AUC 0.7957044243812561, avg_entr 0.04896601662039757, f1 0.2825999855995178
+ep170_l1_test_time 2.2199108449995038
+Test Epoch170 layer2 Acc 0.2943, AUC 0.7779567837715149, avg_entr 0.05745764821767807, f1 0.29429998993873596
+ep170_l2_test_time 2.2232046519993673
+Test Epoch170 layer3 Acc 0.2926, AUC 0.7854734659194946, avg_entr 0.051591191440820694, f1 0.29260000586509705
+ep170_l3_test_time 2.23826970600021
+gc 0
+Train Epoch171 Acc 0.30487 (60974/200000), AUC 0.7986676096916199
+ep171_train_time 38.91681983199942
+Test Epoch171 layer0 Acc 0.2648, AUC 0.7975000739097595, avg_entr 0.04075130075216293, f1 0.2648000121116638
+ep171_l0_test_time 2.2011070550015575
+Test Epoch171 layer1 Acc 0.2826, AUC 0.7957043647766113, avg_entr 0.04896745830774307, f1 0.2825999855995178
+ep171_l1_test_time 2.2092365080006857
+Test Epoch171 layer2 Acc 0.2943, AUC 0.7779556512832642, avg_entr 0.05745747685432434, f1 0.29429998993873596
+ep171_l2_test_time 2.2329418289991736
+Test Epoch171 layer3 Acc 0.2927, AUC 0.785472571849823, avg_entr 0.051591694355010986, f1 0.29269999265670776
+ep171_l3_test_time 2.234415392000301
+gc 0
+Train Epoch172 Acc 0.305745 (61149/200000), AUC 0.7996569275856018
+ep172_train_time 39.02467872899979
+Test Epoch172 layer0 Acc 0.2648, AUC 0.7975001335144043, avg_entr 0.04075176268815994, f1 0.2648000121116638
+ep172_l0_test_time 2.222701791999498
+Test Epoch172 layer1 Acc 0.2826, AUC 0.7957046627998352, avg_entr 0.04896848648786545, f1 0.2825999855995178
+ep172_l1_test_time 2.2089354250001634
+Test Epoch172 layer2 Acc 0.2943, AUC 0.777957022190094, avg_entr 0.05745914950966835, f1 0.29429998993873596
+ep172_l2_test_time 2.2763063330003206
+Test Epoch172 layer3 Acc 0.2927, AUC 0.7854716777801514, avg_entr 0.05159241333603859, f1 0.29269999265670776
+ep172_l3_test_time 2.2864375850003853
+gc 0
+Train Epoch173 Acc 0.305025 (61005/200000), AUC 0.7997164726257324
+ep173_train_time 38.91633648900097
+Test Epoch173 layer0 Acc 0.2648, AUC 0.7975000143051147, avg_entr 0.040753625333309174, f1 0.2648000121116638
+ep173_l0_test_time 2.2124884000004386
+Test Epoch173 layer1 Acc 0.2826, AUC 0.7957053184509277, avg_entr 0.04896925762295723, f1 0.2825999855995178
+ep173_l1_test_time 2.2245222729998204
+Test Epoch173 layer2 Acc 0.2944, AUC 0.7779574394226074, avg_entr 0.05745871737599373, f1 0.29440000653266907
+ep173_l2_test_time 2.2354397859999153
+Test Epoch173 layer3 Acc 0.2926, AUC 0.7854710221290588, avg_entr 0.0515928640961647, f1 0.29260000586509705
+ep173_l3_test_time 2.2555130510008894
+gc 0
+Train Epoch174 Acc 0.30517 (61034/200000), AUC 0.7990003228187561
+ep174_train_time 38.84946447100083
+Test Epoch174 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.04075518995523453, f1 0.2648000121116638
+ep174_l0_test_time 2.2682834129991534
+Test Epoch174 layer1 Acc 0.2826, AUC 0.7957044839859009, avg_entr 0.04897115007042885, f1 0.2825999855995178
+ep174_l1_test_time 2.2200241180016747
+Test Epoch174 layer2 Acc 0.2944, AUC 0.7779565453529358, avg_entr 0.05746086314320564, f1 0.29440000653266907
+ep174_l2_test_time 2.2353935969986196
+Test Epoch174 layer3 Acc 0.2926, AUC 0.785471498966217, avg_entr 0.05159396305680275, f1 0.29260000586509705
+ep174_l3_test_time 2.2412613359992974
+gc 0
+Train Epoch175 Acc 0.305065 (61013/200000), AUC 0.7989172339439392
+ep175_train_time 38.73578734700095
+Test Epoch175 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.04075530916452408, f1 0.2648000121116638
+ep175_l0_test_time 2.2041367199999513
+Test Epoch175 layer1 Acc 0.2826, AUC 0.7957046031951904, avg_entr 0.04897099733352661, f1 0.2825999855995178
+ep175_l1_test_time 2.222227013999145
+Test Epoch175 layer2 Acc 0.2944, AUC 0.7779552340507507, avg_entr 0.0574621818959713, f1 0.29440000653266907
+ep175_l2_test_time 2.233893911999985
+Test Epoch175 layer3 Acc 0.2925, AUC 0.78547203540802, avg_entr 0.05159444734454155, f1 0.29249998927116394
+ep175_l3_test_time 2.2580540719991404
+gc 0
+Train Epoch176 Acc 0.30482 (60964/200000), AUC 0.7990067005157471
+ep176_train_time 38.881972944000154
+Test Epoch176 layer0 Acc 0.2648, AUC 0.7974997758865356, avg_entr 0.040756892412900925, f1 0.2648000121116638
+ep176_l0_test_time 2.268881476000388
+Test Epoch176 layer1 Acc 0.2826, AUC 0.7957046627998352, avg_entr 0.048971690237522125, f1 0.2825999855995178
+ep176_l1_test_time 2.2058634200002416
+Test Epoch176 layer2 Acc 0.2943, AUC 0.7779548764228821, avg_entr 0.05746162682771683, f1 0.29429998993873596
+ep176_l2_test_time 2.2258018940010516
+Test Epoch176 layer3 Acc 0.2926, AUC 0.7854707837104797, avg_entr 0.051595043390989304, f1 0.29260000586509705
+ep176_l3_test_time 2.269267165000201
+gc 0
+Train Epoch177 Acc 0.304095 (60819/200000), AUC 0.7993684411048889
+ep177_train_time 39.138510693999706
+Test Epoch177 layer0 Acc 0.2648, AUC 0.7974994778633118, avg_entr 0.04075706750154495, f1 0.2648000121116638
+ep177_l0_test_time 2.2024471140011883
+Test Epoch177 layer1 Acc 0.2826, AUC 0.7957040667533875, avg_entr 0.04897063225507736, f1 0.2825999855995178
+ep177_l1_test_time 2.252659773999767
+Test Epoch177 layer2 Acc 0.2945, AUC 0.777954638004303, avg_entr 0.05745843052864075, f1 0.2944999933242798
+ep177_l2_test_time 2.2249745419994724
+Test Epoch177 layer3 Acc 0.2926, AUC 0.7854702472686768, avg_entr 0.05159398168325424, f1 0.29260000586509705
+ep177_l3_test_time 2.257512164000218
+gc 0
+Train Epoch178 Acc 0.304215 (60843/200000), AUC 0.7990488409996033
+ep178_train_time 38.92866397999933
+Test Epoch178 layer0 Acc 0.2648, AUC 0.7974989414215088, avg_entr 0.040756743401288986, f1 0.2648000121116638
+ep178_l0_test_time 2.2079632160002802
+Test Epoch178 layer1 Acc 0.2825, AUC 0.7957044243812561, avg_entr 0.048970840871334076, f1 0.2824999988079071
+ep178_l1_test_time 2.2017862900011096
+Test Epoch178 layer2 Acc 0.2945, AUC 0.7779538631439209, avg_entr 0.05745871737599373, f1 0.2944999933242798
+ep178_l2_test_time 2.231171413000993
+Test Epoch178 layer3 Acc 0.2926, AUC 0.7854711413383484, avg_entr 0.051594048738479614, f1 0.29260000586509705
+ep178_l3_test_time 2.256795763998525
+gc 0
+Train Epoch179 Acc 0.3046 (60920/200000), AUC 0.798757791519165
+ep179_train_time 38.875163362999956
+Test Epoch179 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.04075668752193451, f1 0.2648000121116638
+ep179_l0_test_time 2.207057162999263
+Test Epoch179 layer1 Acc 0.2825, AUC 0.7957046031951904, avg_entr 0.0489715151488781, f1 0.2824999988079071
+ep179_l1_test_time 2.2494098770002893
+Test Epoch179 layer2 Acc 0.2944, AUC 0.7779533267021179, avg_entr 0.05745764821767807, f1 0.29440000653266907
+ep179_l2_test_time 2.2300009869995847
+Test Epoch179 layer3 Acc 0.2925, AUC 0.7854693531990051, avg_entr 0.05159152299165726, f1 0.29249998927116394
+ep179_l3_test_time 2.2473148370008857
+gc 0
+Train Epoch180 Acc 0.30422 (60844/200000), AUC 0.7990104556083679
+ep180_train_time 38.97393250700043
+Test Epoch180 layer0 Acc 0.2648, AUC 0.797499418258667, avg_entr 0.04075508564710617, f1 0.2648000121116638
+ep180_l0_test_time 2.2196955119998165
+Test Epoch180 layer1 Acc 0.2825, AUC 0.7957047820091248, avg_entr 0.04897080361843109, f1 0.2824999988079071
+ep180_l1_test_time 2.2091783310006576
+Test Epoch180 layer2 Acc 0.2944, AUC 0.7779533267021179, avg_entr 0.05745996534824371, f1 0.29440000653266907
+ep180_l2_test_time 2.23904635100007
+Test Epoch180 layer3 Acc 0.2927, AUC 0.7854709029197693, avg_entr 0.05159279704093933, f1 0.29269999265670776
+ep180_l3_test_time 2.2476130289996945
+gc 0
+Train Epoch181 Acc 0.30398 (60796/200000), AUC 0.7998717427253723
+ep181_train_time 38.86381341099877
+Test Epoch181 layer0 Acc 0.2648, AUC 0.7974997758865356, avg_entr 0.040753912180662155, f1 0.2648000121116638
+ep181_l0_test_time 2.2297853820000455
+Test Epoch181 layer1 Acc 0.2825, AUC 0.7957043647766113, avg_entr 0.0489695742726326, f1 0.2824999988079071
+ep181_l1_test_time 2.2059454370009917
+Test Epoch181 layer2 Acc 0.2944, AUC 0.7779538035392761, avg_entr 0.057461854070425034, f1 0.29440000653266907
+ep181_l2_test_time 2.233276055998431
+Test Epoch181 layer3 Acc 0.2927, AUC 0.7854715585708618, avg_entr 0.05159552022814751, f1 0.29269999265670776
+ep181_l3_test_time 2.246480314999644
+gc 0
+Train Epoch182 Acc 0.304135 (60827/200000), AUC 0.7989340424537659
+ep182_train_time 38.7789340140007
+Test Epoch182 layer0 Acc 0.2648, AUC 0.7974995374679565, avg_entr 0.04075319692492485, f1 0.2648000121116638
+ep182_l0_test_time 2.197971965000761
+Test Epoch182 layer1 Acc 0.2825, AUC 0.7957044243812561, avg_entr 0.04896869510412216, f1 0.2824999988079071
+ep182_l1_test_time 2.2077467650015024
+Test Epoch182 layer2 Acc 0.2944, AUC 0.7779541611671448, avg_entr 0.05746026709675789, f1 0.29440000653266907
+ep182_l2_test_time 2.238529464999374
+Test Epoch182 layer3 Acc 0.2926, AUC 0.785470187664032, avg_entr 0.05159185826778412, f1 0.29260000586509705
+ep182_l3_test_time 2.265600077998897
+gc 0
+Train Epoch183 Acc 0.3048 (60960/200000), AUC 0.7992134690284729
+ep183_train_time 38.793731349000154
+Test Epoch183 layer0 Acc 0.2648, AUC 0.7974992394447327, avg_entr 0.040754180401563644, f1 0.2648000121116638
+ep183_l0_test_time 2.2153365809990646
+Test Epoch183 layer1 Acc 0.2825, AUC 0.7957040667533875, avg_entr 0.04897061735391617, f1 0.2824999988079071
+ep183_l1_test_time 2.2083947760002047
+Test Epoch183 layer2 Acc 0.2944, AUC 0.7779545783996582, avg_entr 0.05746245011687279, f1 0.29440000653266907
+ep183_l2_test_time 2.245653124000455
+Test Epoch183 layer3 Acc 0.2927, AUC 0.7854706048965454, avg_entr 0.051593877375125885, f1 0.29269999265670776
+ep183_l3_test_time 2.2727436860004673
+gc 0
+Train Epoch184 Acc 0.304255 (60851/200000), AUC 0.7990930080413818
+ep184_train_time 38.99134095400041
+Test Epoch184 layer0 Acc 0.2648, AUC 0.7974991798400879, avg_entr 0.040756188333034515, f1 0.2648000121116638
+ep184_l0_test_time 2.2218103220002376
+Test Epoch184 layer1 Acc 0.2825, AUC 0.7957040667533875, avg_entr 0.048972368240356445, f1 0.2824999988079071
+ep184_l1_test_time 2.27138185900003
+Test Epoch184 layer2 Acc 0.2945, AUC 0.7779533267021179, avg_entr 0.057463470846414566, f1 0.2944999933242798
+ep184_l2_test_time 2.259270975000618
+Test Epoch184 layer3 Acc 0.2927, AUC 0.7854697704315186, avg_entr 0.051593925803899765, f1 0.29269999265670776
+ep184_l3_test_time 2.2459295360004035
+gc 0
+Train Epoch185 Acc 0.304715 (60943/200000), AUC 0.7991735935211182
+ep185_train_time 38.73813700499886
+Test Epoch185 layer0 Acc 0.2648, AUC 0.7974989414215088, avg_entr 0.0407569445669651, f1 0.2648000121116638
+ep185_l0_test_time 2.2148019579999527
+Test Epoch185 layer1 Acc 0.2825, AUC 0.7957035899162292, avg_entr 0.04897352308034897, f1 0.2824999988079071
+ep185_l1_test_time 2.236827352000546
+Test Epoch185 layer2 Acc 0.2946, AUC 0.7779529094696045, avg_entr 0.057465918362140656, f1 0.2946000099182129
+ep185_l2_test_time 2.2383526350004104
+Test Epoch185 layer3 Acc 0.2926, AUC 0.7854689955711365, avg_entr 0.05159630626440048, f1 0.29260000586509705
+ep185_l3_test_time 2.2402451019988803
+gc 0
+Train Epoch186 Acc 0.305645 (61129/200000), AUC 0.7991616725921631
+ep186_train_time 38.88358728499952
+Test Epoch186 layer0 Acc 0.2648, AUC 0.7974986433982849, avg_entr 0.04075832664966583, f1 0.2648000121116638
+ep186_l0_test_time 2.2196157639991725
+Test Epoch186 layer1 Acc 0.2826, AUC 0.7957035899162292, avg_entr 0.048974573612213135, f1 0.2825999855995178
+ep186_l1_test_time 2.200757574999443
+Test Epoch186 layer2 Acc 0.2945, AUC 0.7779532670974731, avg_entr 0.05746670067310333, f1 0.2944999933242798
+ep186_l2_test_time 2.221191742000883
+Test Epoch186 layer3 Acc 0.2927, AUC 0.785469114780426, avg_entr 0.05159835144877434, f1 0.29269999265670776
+ep186_l3_test_time 2.229755637999915
+gc 0
+Train Epoch187 Acc 0.304045 (60809/200000), AUC 0.7990678548812866
+ep187_train_time 39.23813724400134
+Test Epoch187 layer0 Acc 0.2648, AUC 0.7974989414215088, avg_entr 0.040759067982435226, f1 0.2648000121116638
+ep187_l0_test_time 2.2277585359988734
+Test Epoch187 layer1 Acc 0.2825, AUC 0.7957037091255188, avg_entr 0.04897352680563927, f1 0.2824999988079071
+ep187_l1_test_time 2.254506642000706
+Test Epoch187 layer2 Acc 0.2946, AUC 0.7779518961906433, avg_entr 0.05746573582291603, f1 0.2946000099182129
+ep187_l2_test_time 2.228201349000301
+Test Epoch187 layer3 Acc 0.2926, AUC 0.785469651222229, avg_entr 0.05159539356827736, f1 0.29260000586509705
+ep187_l3_test_time 2.2460223369998857
+gc 0
+Train Epoch188 Acc 0.304215 (60843/200000), AUC 0.7989689707756042
+ep188_train_time 39.13973595800053
+Test Epoch188 layer0 Acc 0.2648, AUC 0.7974987626075745, avg_entr 0.04075833037495613, f1 0.2648000121116638
+ep188_l0_test_time 2.2228397790004237
+Test Epoch188 layer1 Acc 0.2825, AUC 0.7957035899162292, avg_entr 0.04897332936525345, f1 0.2824999988079071
+ep188_l1_test_time 2.2311012479985948
+Test Epoch188 layer2 Acc 0.2946, AUC 0.7779538035392761, avg_entr 0.05746638774871826, f1 0.2946000099182129
+ep188_l2_test_time 2.2617705070006195
+Test Epoch188 layer3 Acc 0.2927, AUC 0.7854692339897156, avg_entr 0.05159525200724602, f1 0.29269999265670776
+ep188_l3_test_time 2.2550909869987663
+gc 0
+Train Epoch189 Acc 0.30443 (60886/200000), AUC 0.7989771962165833
+ep189_train_time 38.871885705999375
+Test Epoch189 layer0 Acc 0.2648, AUC 0.797498345375061, avg_entr 0.04075832664966583, f1 0.2648000121116638
+ep189_l0_test_time 2.2002560299988545
+Test Epoch189 layer1 Acc 0.2825, AUC 0.7957038283348083, avg_entr 0.04897380247712135, f1 0.2824999988079071
+ep189_l1_test_time 2.212670231001539
+Test Epoch189 layer2 Acc 0.2945, AUC 0.7779539227485657, avg_entr 0.057467829436063766, f1 0.2944999933242798
+ep189_l2_test_time 2.2294861469999887
+Test Epoch189 layer3 Acc 0.2927, AUC 0.785469114780426, avg_entr 0.051597774028778076, f1 0.29269999265670776
+ep189_l3_test_time 2.270281896000597
+gc 0
+Train Epoch190 Acc 0.30546 (61092/200000), AUC 0.7993125319480896
+ep190_train_time 38.94868931000019
+Test Epoch190 layer0 Acc 0.2648, AUC 0.7974987030029297, avg_entr 0.04075876250863075, f1 0.2648000121116638
+ep190_l0_test_time 2.206448709999677
+Test Epoch190 layer1 Acc 0.2826, AUC 0.7957035899162292, avg_entr 0.04897407814860344, f1 0.2825999855995178
+ep190_l1_test_time 2.2191804590001993
+Test Epoch190 layer2 Acc 0.2945, AUC 0.7779529690742493, avg_entr 0.0574670284986496, f1 0.2944999933242798
+ep190_l2_test_time 2.2590600950006774
+Test Epoch190 layer3 Acc 0.2927, AUC 0.7854688763618469, avg_entr 0.0515979565680027, f1 0.29269999265670776
+ep190_l3_test_time 2.2696549970005435
+gc 0
+Train Epoch191 Acc 0.305115 (61023/200000), AUC 0.7997044324874878
+ep191_train_time 38.85763781700007
+Test Epoch191 layer0 Acc 0.2648, AUC 0.7974979877471924, avg_entr 0.040755290538072586, f1 0.2648000121116638
+ep191_l0_test_time 2.267169852000734
+Test Epoch191 layer1 Acc 0.2826, AUC 0.79570472240448, avg_entr 0.048971399664878845, f1 0.2825999855995178
+ep191_l1_test_time 2.212246746999881
+Test Epoch191 layer2 Acc 0.2945, AUC 0.7779549956321716, avg_entr 0.057466309517621994, f1 0.2944999933242798
+ep191_l2_test_time 2.273604695999893
+Test Epoch191 layer3 Acc 0.2927, AUC 0.7854697704315186, avg_entr 0.05159944295883179, f1 0.29269999265670776
+ep191_l3_test_time 2.255374414000471
+gc 0
+Train Epoch192 Acc 0.30431 (60862/200000), AUC 0.7987583875656128
+ep192_train_time 38.96393849500055
+Test Epoch192 layer0 Acc 0.2648, AUC 0.7974975109100342, avg_entr 0.04075516760349274, f1 0.2648000121116638
+ep192_l0_test_time 2.2666462590004812
+Test Epoch192 layer1 Acc 0.2826, AUC 0.7957044243812561, avg_entr 0.048972077667713165, f1 0.2825999855995178
+ep192_l1_test_time 2.201567651000005
+Test Epoch192 layer2 Acc 0.2945, AUC 0.7779548764228821, avg_entr 0.057465631514787674, f1 0.2944999933242798
+ep192_l2_test_time 2.229066908999812
+Test Epoch192 layer3 Acc 0.2926, AUC 0.7854700684547424, avg_entr 0.051597923040390015, f1 0.29260000586509705
+ep192_l3_test_time 2.237751685001058
+gc 0
+Train Epoch193 Acc 0.30541 (61082/200000), AUC 0.7995597720146179
+ep193_train_time 38.727742576998935
+Test Epoch193 layer0 Acc 0.2648, AUC 0.797497570514679, avg_entr 0.040755126625299454, f1 0.2648000121116638
+ep193_l0_test_time 2.203159530999983
+Test Epoch193 layer1 Acc 0.2826, AUC 0.7957038879394531, avg_entr 0.048974648118019104, f1 0.2825999855995178
+ep193_l1_test_time 2.202502916999947
+Test Epoch193 layer2 Acc 0.2945, AUC 0.7779548168182373, avg_entr 0.05746639892458916, f1 0.2944999933242798
+ep193_l2_test_time 2.243773116999364
+Test Epoch193 layer3 Acc 0.2927, AUC 0.7854698300361633, avg_entr 0.05159805342555046, f1 0.29269999265670776
+ep193_l3_test_time 2.2483782439994684
+gc 0
+Train Epoch194 Acc 0.304085 (60817/200000), AUC 0.7989932894706726
+ep194_train_time 38.9674838660012
+Test Epoch194 layer0 Acc 0.2648, AUC 0.7974973320960999, avg_entr 0.04075493663549423, f1 0.2648000121116638
+ep194_l0_test_time 2.2075872360001085
+Test Epoch194 layer1 Acc 0.2826, AUC 0.7957035899162292, avg_entr 0.048975151032209396, f1 0.2825999855995178
+ep194_l1_test_time 2.247698285000297
+Test Epoch194 layer2 Acc 0.2946, AUC 0.777954638004303, avg_entr 0.05746740847826004, f1 0.2946000099182129
+ep194_l2_test_time 2.2402494859998114
+Test Epoch194 layer3 Acc 0.2927, AUC 0.7854695916175842, avg_entr 0.051598142832517624, f1 0.29269999265670776
+ep194_l3_test_time 2.238655621000362
+gc 0
+Train Epoch195 Acc 0.30391 (60782/200000), AUC 0.7990773916244507
+ep195_train_time 38.87296058800166
+Test Epoch195 layer0 Acc 0.2648, AUC 0.7974969744682312, avg_entr 0.04075474292039871, f1 0.2648000121116638
+ep195_l0_test_time 2.216676260000895
+Test Epoch195 layer1 Acc 0.2826, AUC 0.795704185962677, avg_entr 0.04897429794073105, f1 0.2825999855995178
+ep195_l1_test_time 2.2152682180003467
+Test Epoch195 layer2 Acc 0.2945, AUC 0.777954638004303, avg_entr 0.05746547877788544, f1 0.2944999933242798
+ep195_l2_test_time 2.2938191249995725
+Test Epoch195 layer3 Acc 0.2927, AUC 0.785469651222229, avg_entr 0.05159831419587135, f1 0.29269999265670776
+ep195_l3_test_time 2.2472592260000965
+gc 0
+Train Epoch196 Acc 0.304315 (60863/200000), AUC 0.7987580299377441
+ep196_train_time 38.772098411000115
+Test Epoch196 layer0 Acc 0.2648, AUC 0.7974968552589417, avg_entr 0.04075520485639572, f1 0.2648000121116638
+ep196_l0_test_time 2.213283369999772
+Test Epoch196 layer1 Acc 0.2827, AUC 0.7957033514976501, avg_entr 0.04897485673427582, f1 0.2827000021934509
+ep196_l1_test_time 2.203759820000414
+Test Epoch196 layer2 Acc 0.2946, AUC 0.7779548168182373, avg_entr 0.05746648088097572, f1 0.2946000099182129
+ep196_l2_test_time 2.2409507789998315
+Test Epoch196 layer3 Acc 0.2927, AUC 0.7854694128036499, avg_entr 0.05159841850399971, f1 0.29269999265670776
+ep196_l3_test_time 2.258913334000681
+gc 0
+Train Epoch197 Acc 0.30536 (61072/200000), AUC 0.7991451025009155
+ep197_train_time 38.78991408700131
+Test Epoch197 layer0 Acc 0.2648, AUC 0.797497034072876, avg_entr 0.04075473174452782, f1 0.2648000121116638
+ep197_l0_test_time 2.235010645999864
+Test Epoch197 layer1 Acc 0.2827, AUC 0.7957038879394531, avg_entr 0.04897412285208702, f1 0.2827000021934509
+ep197_l1_test_time 2.2110009269999864
+Test Epoch197 layer2 Acc 0.2945, AUC 0.7779555320739746, avg_entr 0.05746832862496376, f1 0.2944999933242798
+ep197_l2_test_time 2.2425030859994877
+Test Epoch197 layer3 Acc 0.2926, AUC 0.7854713201522827, avg_entr 0.05159865692257881, f1 0.29260000586509705
+ep197_l3_test_time 2.2386985330012976
+gc 0
+Train Epoch198 Acc 0.304375 (60875/200000), AUC 0.7989729046821594
+ep198_train_time 39.01136507699994
+Test Epoch198 layer0 Acc 0.2648, AUC 0.7974966168403625, avg_entr 0.04075399786233902, f1 0.2648000121116638
+ep198_l0_test_time 2.2385128020014236
+Test Epoch198 layer1 Acc 0.2826, AUC 0.795704185962677, avg_entr 0.04897397384047508, f1 0.2825999855995178
+ep198_l1_test_time 2.2146689380006137
+Test Epoch198 layer2 Acc 0.2945, AUC 0.7779542803764343, avg_entr 0.05746518075466156, f1 0.2944999933242798
+ep198_l2_test_time 2.2569881609997537
+Test Epoch198 layer3 Acc 0.2927, AUC 0.7854715585708618, avg_entr 0.05159689858555794, f1 0.29269999265670776
+ep198_l3_test_time 2.2480258209998283
+gc 0
+Train Epoch199 Acc 0.303805 (60761/200000), AUC 0.7987661957740784
+ep199_train_time 39.027158528000655
+Test Epoch199 layer0 Acc 0.2648, AUC 0.7974969744682312, avg_entr 0.040754251182079315, f1 0.2648000121116638
+ep199_l0_test_time 2.2073611369996797
+Test Epoch199 layer1 Acc 0.2826, AUC 0.7957049608230591, avg_entr 0.04897511750459671, f1 0.2825999855995178
+ep199_l1_test_time 2.2287357630011684
+Test Epoch199 layer2 Acc 0.2946, AUC 0.7779524922370911, avg_entr 0.057464390993118286, f1 0.2946000099182129
+ep199_l2_test_time 2.2305909030001203
+Test Epoch199 layer3 Acc 0.2927, AUC 0.7854723334312439, avg_entr 0.05159573256969452, f1 0.29269999265670776
+ep199_l3_test_time 2.2392080730005546
+Best AUC tensor(0.2958) 54
+train_loss (2, 4, 200)
+valid_acc (4, 200)
+valid_AUC (4, 200)
+train_acc (200,)

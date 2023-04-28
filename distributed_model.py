@@ -114,12 +114,11 @@ class ENC(nn.Module):
                 nn.Linear(out_dim, lab_dim),
                 nn.Tanh(),
             )
-
         elif f == 'cnn':
             flatten_size = out_dim
             self.f = conv
             self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
-
+        
         self.cri = nn.MSELoss()
     
     def forward(self, x, tgt, mask=None, hidden=None):
@@ -425,7 +424,6 @@ class alModel(nn.Module):
         self.layers = ModuleList([])
         
     def schedulerStep(self, layer, score):
-        #print("lr step")
         self.layers[layer].ae_sche.step(score)
         self.layers[layer].enc_sche.step(score)
         
@@ -453,7 +451,7 @@ class alModel(nn.Module):
             print(name, params)
         print(f"Total Trainable Params: {total_params}")
         return total_params
-
+    
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
@@ -532,7 +530,7 @@ class TransformerModelML(alModel):
             # return form b/h
             y_out = self.bridge_return(x_out, idx, mask)
 
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            y_entr = confidence(y_out)
 
             total_remain_idx = entr>threshold
             
@@ -666,8 +664,8 @@ class LSTMModelML(alModel):
             # return form b/h
             y_out = self.bridge_return(x_out, idx, hidden)
 
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
-
+            y_entr = confidence(y_out)
+            
             total_remain_idx = entr>threshold
             
             entr[total_remain_idx] = y_entr
@@ -788,7 +786,7 @@ class LinearModelML(alModel):
             # return form b/h
             y_out = self.bridge_return(x_out, idx)
 
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            y_entr = confidence(y_out)
 
             total_remain_idx = entr>threshold
             
@@ -1154,7 +1152,7 @@ class TransformerALsideText(alSideModel):
                 y_out = self.layers[idx_r].ae.h(y_out)
             
             # filter
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            y_entr = confidence(y_out)
             remain_idx = y_entr>threshold
             total_remain_idx = entr>threshold
             
@@ -1328,7 +1326,7 @@ class LSTMALsideText(alSideModel):
                 y_out = self.layers[idx_r].ae.h(y_out)
             
             # filter
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            y_entr = confidence(y_out)
             remain_idx = y_entr>threshold
             total_remain_idx = entr>threshold
             
@@ -1484,7 +1482,7 @@ class LinearALsideText(alSideModel):
                 y_out = self.layers[idx_r].ae.h(y_out)
                 
             # filter
-            y_entr = torch.sum(torch.special.entr(y_out),dim=-1) / math.log(y_out.size(-1))
+            y_entr = confidence(y_out)
             remain_idx = y_entr>threshold
             total_remain_idx = entr>threshold
             

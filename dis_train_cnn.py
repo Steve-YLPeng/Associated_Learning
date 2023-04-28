@@ -23,7 +23,7 @@ def get_args():
 
     # model param
     parser.add_argument('--label-emb', type=int,
-                        help='label embedding dimension', default=128)
+                        help='label embedding dimension', default=300)
     parser.add_argument('--l1-dim', type=int,
                         help='lstm1 hidden dimension', default=300)
 
@@ -31,7 +31,8 @@ def get_args():
 
     # training param
     parser.add_argument('--lr', type=float, help='lr', default=0.001)
-    parser.add_argument('--batch-size', type=int, help='batch-size', default=64)
+    parser.add_argument('--batch-train', type=int, help='batch-size', default=128)
+    parser.add_argument('--batch-test', type=int, help='batch-size', default=1024)
     parser.add_argument('--one-hot-label', type=bool,
                         help='if true then use one-hot vector as label input, else integer', default=True)
     parser.add_argument('--epoch', type=int, default=20)
@@ -50,7 +51,7 @@ def get_args():
     parser.add_argument('--train-mask', type=int, default=None)
     parser.add_argument('--prefix-mask', action='store_true')
     parser.add_argument('--side-dim', type=str, default=None)
-    parser.add_argument('--same-emb', action='store_true')
+    
     # CNN
     parser.add_argument('--aug-type', type=str, default='strong')
     args = parser.parse_args()
@@ -63,9 +64,7 @@ def get_args():
     return args
 
 
-def train(model:alModel, data_loader:DataLoader, epoch, aug_type, dataset, task="image", layer_mask=None):
-    
-        
+def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, dataset:str, task="image", layer_mask=None):  
     if task == "image":
         
         cor, num, tot_loss = 0, 0, []
@@ -83,21 +82,20 @@ def train(model:alModel, data_loader:DataLoader, epoch, aug_type, dataset, task=
                     y = torch.cat([y, y])
 
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
-            #print("size",x.shape,y.shape)
             losses = model(x, y)
             tot_loss.append(losses)
             
             #model.eval()
-            pred = model.inference(x)
-            
-            y_out = torch.cat((y_out, pred.cpu()), 0)
-            y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
-            
-            cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
-            num += x.size(0)
-            #print(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-            data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-            #gc.collect()
+            with torch.no_grad():
+                pred = model.inference(x)
+                
+                y_out = torch.cat((y_out, pred.cpu()), 0)
+                y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
+                cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
+                num += x.size(0)
+                
+                data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
+
         train_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
         
@@ -184,8 +182,12 @@ def main():
         #train_loader, valid_loader, class_num = get_data(args)
         train_loader, valid_loader, class_num = get_img_data(args)
         if args.model == 'CNN_AL':
-            model = CNN_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=128)
-
+            model = CNN_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+        if args.model == 'VGG_AL':
+            model = VGG_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+        if args.model == 'resnet_AL':
+            model = resnet18_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+            
             
     if args.load_dir != None:
         print("Load ckpt from", f'{load_path}.pt')
@@ -224,6 +226,8 @@ def main():
             
             valid_acc,valid_AUC,valid_entr = [],[],[]
             with torch.no_grad():
+                
+                ### shortcut testing
                 for layer in range(model.num_layer):
                 #for layer in [model.num_layer-1]:
                     ep_test_start_time = time.process_time()
@@ -233,7 +237,7 @@ def main():
                     valid_acc.append(acc)
                     valid_entr.append(entr)
                     if args.lr_schedule != None:
-                        model.schedulerStep(layer,AUC)
+                        model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
                     print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
                     print("ep%s_l%s_test_time %s"%(epoch, layer ,time.process_time()-ep_test_start_time))
@@ -242,6 +246,28 @@ def main():
                         best_epoch = epoch
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
+                        
+                ### adaptive testing    
+                test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+                for threshold in test_threshold:
+                    print("gc",gc.collect())
+                    test_start_time = time.process_time()
+                    AUC,f1, acc, entr = test_adapt(model, valid_loader, threshold=threshold, max_depth=args.train_mask)
+                    criteria = f1
+                    valid_AUC.append(AUC)
+                    valid_acc.append(acc)
+                    valid_entr.append(entr)
+                    #if args.lr_schedule != None:
+                    #    model.schedulerStep(layer,criteria)
+                    torch.cuda.synchronize()
+                    print(f'Test threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                    print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
+                    if criteria >= best_AUC:
+                        best_AUC = criteria
+                        best_epoch = epoch
+                        print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
+                        torch.save(model.state_dict(), f'{save_path}.pt')
+                    
             model.history["valid_acc"].append(valid_acc)
             model.history["valid_AUC"].append(valid_AUC)
             model.history["valid_entr"].append(valid_entr)
@@ -254,8 +280,7 @@ def main():
         print('train_acc', numpy.array(model.history["train_acc"]).shape)
       
     #plotResult(model, out_path, args.task)
-        model.load_state_dict(torch.load(f'{save_path}.pt'))
-        predicting_for_sst(args, model, vocab)
+
     torch.cuda.synchronize()    
     print("total_train+valid_time %s"%(time.process_time()-total_train_time))
     """
