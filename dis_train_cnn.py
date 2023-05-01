@@ -228,6 +228,7 @@ def main():
             with torch.no_grad():
                 
                 ### shortcut testing
+                
                 for layer in range(model.num_layer):
                 #for layer in [model.num_layer-1]:
                     ep_test_start_time = time.process_time()
@@ -249,6 +250,7 @@ def main():
                         
                 ### adaptive testing    
                 test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+                #test_threshold = [.01,.05,.1,.15,.2,.25,.5,.75,.9] 
                 for threshold in test_threshold:
                     print("gc",gc.collect())
                     test_start_time = time.process_time()

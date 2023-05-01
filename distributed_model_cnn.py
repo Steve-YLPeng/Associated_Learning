@@ -101,15 +101,17 @@ class cnn_alModel(alModel):
 
             y_entr = confidence(y_out)
 
-            total_remain_idx = entr>threshold
+            remain_idx = y_entr>threshold
+            #remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-
-            remain_idx = y_entr>threshold
-
+            
+            
+            
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
             x_out = x_out[remain_idx,:]
-
             if x_out.size(0) == 0: break
     
         return pred, entr
