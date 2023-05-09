@@ -201,13 +201,6 @@ def main():
     model = model.cuda()
     model.summary()
         
-    if args.train_mask != None:
-        if args.prefix_mask:
-            layer_mask = {*range(args.train_mask)}
-        else:
-            layer_mask = {args.train_mask-1}
-    else:
-        layer_mask = {*range(args.num_layer)}
     torch.cuda.synchronize()    
     print("init_time %s"%(time.process_time()-init_start_time))
     print('Start Training')
@@ -217,78 +210,86 @@ def main():
     
     if args.task == "image":
         
-        best_AUC = 0
-        best_epoch = -1
-        for epoch in range(args.epoch):
-            print("gc",gc.collect())
-            ep_train_start_time = time.process_time()
-            train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask,
-                  aug_type=args.aug_type, dataset=args.dataset)
-            torch.cuda.synchronize()
-            print("ep%s_train_time %s"%(epoch ,time.process_time()-ep_train_start_time))
-            
-            valid_acc,valid_AUC,valid_entr = [],[],[]
-            with torch.no_grad():
+        
+        for max_depth in range(4):
+            best_AUC = 0
+            best_epoch = -1
+            layer_mask = {max_depth}
+            for epoch in range(int(args.epoch/model.num_layer)):
+                print("gc",gc.collect())
+                ep_train_start_time = time.process_time()
+                train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask,
+                    aug_type=args.aug_type, dataset=args.dataset)
+                torch.cuda.synchronize()
+                print("ep%s_train_time %s"%(epoch ,time.process_time()-ep_train_start_time))
                 
-                ### shortcut testing
-                
-                for layer in range(model.num_layer):
-                #for layer in [model.num_layer-1]:
-                    ep_test_start_time = time.process_time()
-                    AUC, f1, acc, entr = test(model, valid_loader, shortcut=layer+1, task=args.task)
-                    criteria = f1
-                    valid_AUC.append(AUC)
-                    valid_acc.append(acc)
-                    valid_entr.append(entr)
-                    if args.lr_schedule != None:
-                        model.schedulerStep(layer,criteria)
-                    torch.cuda.synchronize()
-                    print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
-                    print("ep%s_l%s_test_time %s"%(epoch, layer ,time.process_time()-ep_test_start_time))
-                    if layer in layer_mask and criteria >= best_AUC:
-                        best_AUC = criteria
-                        best_epoch = epoch
-                        print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
-                        torch.save(model.state_dict(), f'{save_path}.pt')
-                        
-                ### adaptive testing    
-                test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
-                #test_threshold = [.01,.05,.1,.15,.2,.25,.5,.75,.9] 
-                for threshold in test_threshold:
-                    print("gc",gc.collect())
-                    test_start_time = time.process_time()
-                    model.data_distribution = [0 for _ in range(model.num_layer)]
-                    AUC,f1, acc, entr = test_adapt(model, valid_loader, threshold=threshold, max_depth=args.train_mask)
-                    criteria = f1
-                    valid_AUC.append(AUC)
-                    valid_acc.append(acc)
-                    valid_entr.append(entr)
-                    #if args.lr_schedule != None:
-                    #    model.schedulerStep(layer,criteria)
-                    torch.cuda.synchronize()
-                    print(f'Test threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
-                    print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
-                    print("data_distribution ",model.data_distribution)
-                    if criteria >= best_AUC:
-                        best_AUC = criteria
-                        best_epoch = epoch
-                        print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
-                        torch.save(model.state_dict(), f'{save_path}.pt')
+                valid_acc,valid_AUC,valid_entr = [],[],[]
+                with torch.no_grad():
                     
-            model.history["valid_acc"].append(valid_acc)
-            model.history["valid_AUC"].append(valid_AUC)
-            model.history["valid_entr"].append(valid_entr)
-            
-            
-        print('Best AUC', best_AUC, best_epoch)
-        print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
-        print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
-        print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
-        print('train_acc', numpy.array(model.history["train_acc"]).shape)
-      
+                    ### shortcut testing
+                    
+                    for layer in range(model.num_layer):
+                    #for layer in [model.num_layer-1]:
+                        ep_test_start_time = time.process_time()
+                        AUC, f1, acc, entr = test(model, valid_loader, shortcut=layer+1, task=args.task)
+                        criteria = f1
+                        #valid_AUC.append(AUC)
+                        #valid_acc.append(acc)
+                        #valid_entr.append(entr)
+                        
+                        torch.cuda.synchronize()
+                        print(f'Test Epoch{epoch} layer{layer} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                        print("ep%s_l%s_test_time %s"%(epoch, layer ,time.process_time()-ep_test_start_time))
+                        if layer in layer_mask:
+                            if args.lr_schedule != None:
+                                model.schedulerStep(layer,criteria)
+                            if criteria >= best_AUC:
+                                best_AUC = criteria
+                                best_epoch = epoch
+                                print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
+                                torch.save(model.state_dict(), f'{save_path}.pt')
+                            
+                    ### adaptive testing    
+                    test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+                    #test_threshold = [.01,.05,.1,.15,.2,.25,.5,.75,.9] 
+                    for threshold in test_threshold:
+                        print("gc",gc.collect())
+                        test_start_time = time.process_time()
+                        model.data_distribution = [0 for _ in range(model.num_layer)]
+                        AUC,f1, acc, entr = test_adapt(model, valid_loader, threshold=threshold, max_depth=max_depth+1)
+                        criteria = f1
+                        #valid_AUC.append(AUC)
+                        #valid_acc.append(acc)
+                        #valid_entr.append(entr)
+                        #if args.lr_schedule != None:
+                        #    model.schedulerStep(layer,criteria)
+                        torch.cuda.synchronize()
+                        print(f'Test threshold {threshold} Acc {acc}, AUC {AUC}, avg_entr {entr}, f1 {f1}')
+                        print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
+                        print("data_distribution ",model.data_distribution)
+                        """ 
+                        if criteria >= best_AUC:
+                            best_AUC = criteria
+                            best_epoch = epoch
+                            print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
+                            torch.save(model.state_dict(), f'{save_path}.pt')
+                        """
+                        
+                #model.history["valid_acc"].append(valid_acc)
+                #model.history["valid_AUC"].append(valid_AUC)
+                #model.history["valid_entr"].append(valid_entr)
+                
+                
+            print('Best AUC', best_AUC, best_epoch)
+            #print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
+            #print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
+            #print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
+            #print('train_acc', numpy.array(model.history["train_acc"]).shape)
+
+            model.load_state_dict(torch.load(f'{save_path}.pt'))
     #plotResult(model, out_path, args.task)
 
     torch.cuda.synchronize()    
     print("total_train+valid_time %s"%(time.process_time()-total_train_time))
-
+    
 main()

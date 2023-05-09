@@ -52,16 +52,21 @@ class CNNLayer(nn.Module):
 class cnn_alModel(alModel):
     def __init__(self, num_layer:int, l1_dim:int, class_num:int, lab_dim:int):
         super().__init__(num_layer, l1_dim, class_num, lab_dim)
-        
+        self.conf_type = "max"
+        self.data_distribution = [0 for _ in range(self.num_layer)]
     def forward(self, x, y):
         layer_loss = []
         y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
         x_out = x
         y_out = y
+        #print("L0 Xin", x_out.size())
+        #print("L0 Yin", y_out.size())
         # forward function also update
         for idx,layer in enumerate(self.layers):
             x_out, y_out, ae_out, as_out = layer(x_out, y_out)
             layer_loss.append([ae_out.item(), as_out.item()])
+            #print(f"L{idx} Xout", x_out.size())
+            #print(f"L{idx} Yout", y_out.size())
         return layer_loss
     
     ### func for inference_adapt
@@ -91,9 +96,10 @@ class cnn_alModel(alModel):
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
         
+        
         x_out = x
         for idx in range(self.num_layer):
-            if idx >= max_depth: break
+            
             # f forward
             x_out = self.layer_forward(x_out, idx)
             # return form b/h
@@ -101,8 +107,10 @@ class cnn_alModel(alModel):
 
             y_entr = confidence(y_out)
 
-            remain_idx = y_entr>threshold
-            #remain_idx = y_entr<threshold
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
@@ -112,8 +120,14 @@ class cnn_alModel(alModel):
             total_remain_idx[total_remain_idx==True] = remain_idx
             
             x_out = x_out[remain_idx,:]
-            if x_out.size(0) == 0: break
-    
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                #print(torch.sum(y_out, dim=-1))
+                #print(y_entr)
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        #print(data_distribution)
         return pred, entr
     
     @torch.no_grad()
@@ -146,7 +160,7 @@ class CNN_AL(cnn_alModel):
         conv2 = nn.Sequential(nn.Conv2d(32, 32, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
         block_1 = nn.Sequential(conv1, conv2)
         layer = CNNLayer(block_1, 32*32*32, lab_dim, out_dim=class_num, lr=lr,
-                         ae_cri='ce', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='ce', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         ### L1
         conv3 = nn.Sequential(nn.Conv2d(32, 32, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
@@ -187,25 +201,25 @@ class VGG_AL(cnn_alModel):
         self.shape //= 2
         block_1 = self._make_layer(layer_cfg[0])
         layer = CNNLayer(block_1, self.shape*self.shape*256, lab_dim, out_dim=class_num, lr=lr,
-                         ae_cri='ce', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='ce', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         ### L1
         self.shape //= 2
         block_2 = self._make_layer(layer_cfg[1])
         layer = CNNLayer(block_2, self.shape*self.shape*512, lab_dim, lr=lr,
-                         ae_cri='mse', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='mse', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         ### L2
         self.shape //= 2
         block_3 = self._make_layer(layer_cfg[2])
         layer = CNNLayer(block_3, self.shape*self.shape*512, lab_dim, lr=lr,
-                         ae_cri='mse', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='mse', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         ### L3
         self.shape //= 2
         block_4 = self._make_layer(layer_cfg[3])
         layer = CNNLayer(block_4, self.shape*self.shape*512, lab_dim, lr=lr,
-                         ae_cri='mse', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='mse', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         
         self.layers = layers     
@@ -256,7 +270,7 @@ class resnet18_AL(cnn_alModel):
         conv1 = conv_layer_bn(3, 64, nn.LeakyReLU(inplace=True), 1, False)
         conv2_x = self._make_layer(64, 64, [1, 1])
         layer = CNNLayer(nn.Sequential(conv1, conv2_x), int(64 * self.shape * self.shape), lab_dim, out_dim=class_num, lr=lr,
-                         ae_cri='ce', ae_act=[nn.Sigmoid(),nn.Sigmoid()] )
+                         ae_cri='ce', ae_act=[nn.Sigmoid(), nn.Sigmoid()] )
         layers.append(layer)
         ### L1
         conv3_x = self._make_layer(64, 128, [2, 1])
@@ -288,4 +302,189 @@ class resnet18_AL(cnn_alModel):
 
         return nn.Sequential(*layers)
     
+
+class CNN_AL_side(CNN_AL):    
+    def __init__(self, num_layer:int, l1_dim:int, lr:float, class_num:int, lab_dim:int=128):
+        super().__init__(num_layer, l1_dim, lr, class_num, lab_dim)
+        
+        self.num_layer = 4
+        self.side_layers = ModuleList([None])
+        ### L1
+        conv1 = nn.Sequential(nn.Conv2d(3, 32, kernel_size = 3, stride = 1, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv1)
+        ### L2
+        conv2 = nn.Sequential(nn.Conv2d(3, 32, kernel_size = 3, stride = 2, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv2)
+        ### L2
+        conv3 = nn.Sequential(nn.Conv2d(3, 64, kernel_size = 3, stride = 2, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv3)
     
+    def forward(self, x, y):
+        layer_loss = []
+        y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        x_out = x
+        y_out = y
+        #print("L0 Xin", x_out.size())
+        #print("L0 Yin", y_out.size())
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                #print(f"L{idx} Sout", side.size())
+                x_out = x_out + side
+            x_out, y_out, ae_out, as_out = layer(x_out, y_out)
+            layer_loss.append([ae_out.item(), as_out.item()])
+            #print(f"L{idx} Xout", x_out.size())
+            #print(f"L{idx} Yout", y_out.size())
+        return layer_loss
+    
+    ### func for inference_adapt
+    def layer_forward(self, x, idx):
+        x_out = self.layers[idx].enc.f(x) 
+        return x_out
+    
+    def bridge_return(self, x, len_path):
+        x_out = x 
+        y_out = self.layers[len_path].enc.b(x_out)
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)
+        return y_out
+
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        x_out = x
+        for idx in range(self.num_layer):
+            if idx >= max_depth: break
+            # f forward
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                x_out = x_out + side
+            x_out = self.layer_forward(x_out, idx)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx)
+
+            y_entr = confidence(y_out)
+
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            
+            
+            
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            if x_out.size(0) == 0: break
+    
+        return pred, entr
+    
+class VGG_AL_side(VGG_AL):    
+    def __init__(self, num_layer:int, l1_dim:int, lr:float, class_num:int, lab_dim:int=128):
+        super().__init__(num_layer, l1_dim, lr, class_num, lab_dim)
+        
+        self.num_layer = 4
+        self.side_layers = ModuleList([None])
+        ### L1
+        conv1 = nn.Sequential(nn.Conv2d(3, 256, kernel_size = 3, stride = 2, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv1)
+        ### L2
+        conv2 = nn.Sequential(nn.Conv2d(3, 512, kernel_size = 3, stride = 4, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv2)
+        ### L2
+        conv3 = nn.Sequential(nn.Conv2d(3, 512, kernel_size = 3, stride = 8, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv3)
+    
+    def forward(self, x, y):
+        layer_loss = []
+        y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        x_out = x
+        y_out = y
+        #print("L0 Xin", x_out.size())
+        #print("L0 Yin", y_out.size())
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                #print(f"L{idx} Sout", side.size())
+                x_out = x_out + side
+            x_out, y_out, ae_out, as_out = layer(x_out, y_out)
+            layer_loss.append([ae_out.item(), as_out.item()])
+            #print(f"L{idx} Xout", x_out.size())
+            #print(f"L{idx} Yout", y_out.size())
+        return layer_loss
+    
+    ### func for inference_adapt
+    def layer_forward(self, x, idx):
+        x_out = self.layers[idx].enc.f(x) 
+        return x_out
+    
+    def bridge_return(self, x, len_path):
+        x_out = x 
+        y_out = self.layers[len_path].enc.b(x_out)
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)
+        return y_out
+
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        x_out = x
+        for idx in range(self.num_layer):
+            if idx >= max_depth: break
+            # f forward
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                x_out = x_out + side
+            x_out = self.layer_forward(x_out, idx)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx)
+
+            y_entr = confidence(y_out)
+
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            
+            
+            
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            if x_out.size(0) == 0: break
+    
+        return pred, entr

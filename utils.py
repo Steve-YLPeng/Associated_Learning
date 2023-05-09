@@ -71,7 +71,7 @@ def initialize_weights(model):
             elif 'weight_hh' in name:
                 nn.init.orthogonal_(param)
 
-def confidence(pred, type="entropy"):
+def confidence(pred, type="max"):
     ### shannon entropy as confidence
     if type=="entropy":
         return torch.sum(torch.special.entr(pred),dim=-1) / math.log(pred.size(-1))
