@@ -214,7 +214,8 @@ def main():
         for max_depth in range(4):
             best_AUC = 0
             best_epoch = -1
-            layer_mask = {max_depth}
+            #layer_mask = {max_depth}
+            layer_mask = {*range(max_depth+1)}
             for epoch in range(int(args.epoch/model.num_layer)):
                 print("gc",gc.collect())
                 ep_train_start_time = time.process_time()
