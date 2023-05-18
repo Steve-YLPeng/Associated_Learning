@@ -488,3 +488,175 @@ class VGG_AL_side(VGG_AL):
             if x_out.size(0) == 0: break
     
         return pred, entr
+    
+class CNN(nn.Module):
+    def __init__(self, class_num):
+        super(CNN, self).__init__()
+        num_neurons = 300
+        self.conv1 = nn.Sequential(nn.Conv2d(3, 32, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        self.conv2 = nn.Sequential(nn.Conv2d(32, 32, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        self.conv3 = nn.Sequential(nn.Conv2d(32, 32, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        
+        self.conv4 = nn.Sequential(nn.Conv2d(32, 32, kernel_size = 3, stride = 2, bias = True, padding = 1), nn.ReLU())
+        
+        self.conv5 = nn.Sequential(nn.Conv2d(32, 64, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        self.conv6 = nn.Sequential(nn.Conv2d(64, 64, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        self.conv7 = nn.Sequential(nn.Conv2d(64, 64, kernel_size = 3, stride = 1, bias = True, padding = 1), nn.ReLU())
+        
+        self.conv8 = nn.Sequential(nn.Conv2d(64, 64, kernel_size = 3, stride = 2, bias = True, padding = 1), nn.ReLU())
+        
+        
+        #self.fc = nn.Sequential(Flatten(), nn.Linear(4096, 5*num_neurons), nn.Sigmoid(), nn.Linear(5*num_neurons, class_num))
+        self.fc = nn.Sequential(Flatten(), nn.Linear(4096, 5*num_neurons), nn.Sigmoid(), nn.Linear(5*num_neurons, num_neurons),
+                                nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, class_num),)
+        
+        self.ce = nn.CrossEntropyLoss()
+        self.class_num = class_num
+        
+    def forward(self, x, y):
+        out = self.conv1(x)
+        out = self.conv2(out)
+        out = self.conv3(out)
+        out = self.conv4(out)
+        out = self.conv5(out)
+        out = self.conv6(out)
+        out = self.conv7(out)
+        out = self.conv8(out)
+        
+        out = self.fc(out)
+        
+        if self.training:
+            return self.ce(out, y)
+        else:
+            return out.detach()
+        
+    def summary(self):
+        print("model:",self)  
+        total_params = 0
+        for name, parameter in self.named_parameters():
+            if not parameter.requires_grad: continue
+            params = parameter.numel()
+            total_params+=params
+            print(name, params)
+        print(f"Total Trainable Params: {total_params}")
+        return total_params
+    
+class resnet18(nn.Module):
+
+    def __init__(self, class_num):
+        super().__init__()
+        num_neurons = 500
+        self.class_num = class_num
+        self.conv1 = conv_layer_bn(3, 64, nn.LeakyReLU(inplace=True), 1, False)
+
+        self.conv2_x = self._make_layer(64, 64, [1, 1])
+        self.conv3_x = self._make_layer(64, 128, [2, 1])
+        self.conv4_x = self._make_layer(128, 256, [2, 1])
+        self.conv5_x = self._make_layer(256, 512, [2, 1])
+        self.avg_pool = nn.AdaptiveAvgPool2d((1, 1))
+        #self.fc = nn.Linear(512, class_num)
+        self.fc = nn.Sequential(Flatten(), nn.Linear(512, 5*num_neurons), nn.Sigmoid(), nn.Linear(5*num_neurons, num_neurons),
+                                nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, num_neurons),nn.Linear(num_neurons, class_num),)
+        
+        self.ce = nn.CrossEntropyLoss()
+
+
+    def _make_layer(self, in_channels, out_channels, strides):
+        layers = []
+        cur_channels = in_channels
+        for stride in strides:
+            layers.append(BasicBlock(cur_channels, out_channels, stride))
+            cur_channels = out_channels
+        return nn.Sequential(*layers)
+
+    def forward(self, x, y=None):
+        output = self.conv1(x)
+        output = self.conv2_x(output)
+        output = self.conv3_x(output)
+        output = self.conv4_x(output)
+        output = self.conv5_x(output)
+        output = self.avg_pool(output)
+        output = output.view(output.size(0), -1)
+        output = self.fc(output)
+        if self.training:
+            return self.ce(output, y)
+        else:
+            return output
+        
+    def summary(self):
+        print("model:",self)  
+        total_params = 0
+        for name, parameter in self.named_parameters():
+            if not parameter.requires_grad: continue
+            params = parameter.numel()
+            total_params+=params
+            print(name, params)
+        print(f"Total Trainable Params: {total_params}")
+        return total_params
+    
+class VGG(nn.Module):
+    def __init__(self, class_num):
+        super(VGG, self).__init__()
+        
+        num_neurons = 500
+        self.class_num = class_num
+        self.in_channel = 3
+        self.ce = nn.CrossEntropyLoss()
+
+        self.layer1 = self._make_layer([128, 256, 'M'])
+        self.layer2 = self._make_layer([256, 512, 'M'])
+        self.layer3 = self._make_layer([512, 'M'])
+        self.layer4 = self._make_layer([512, 'M'])
+
+        #self.fc = nn.Sequential(Flatten(), nn.Linear(2048, 2500), nn.Sigmoid(), nn.Linear(2500, class_num))
+        self.fc = nn.Sequential(Flatten(), nn.Linear(2048, 5*num_neurons), nn.Sigmoid(), nn.Linear(5*num_neurons, num_neurons),
+                                nn.Linear(num_neurons, num_neurons),nn.Sigmoid(),
+                                nn.Linear(num_neurons, num_neurons),nn.Sigmoid(),
+                                nn.Linear(num_neurons, num_neurons),nn.Sigmoid(),
+                                nn.Linear(num_neurons, class_num),)
+        
+        
+    def _make_layer(self, channel_size: list):
+        layers = []
+        for dim in channel_size:
+            if dim == 'M':
+                layers.append(nn.MaxPool2d(2, stride=2))
+            else:
+                layers.append(conv_layer_bn(self.in_channel, dim, nn.ReLU()))
+                self.in_channel = dim
+        return nn.Sequential(*layers)
+
+    def _make_linear_layer(self, in_features, out_features):
+        return nn.Sequential(nn.Linear(in_features, out_features, bias=True), nn.BatchNorm1d(out_features), nn.ReLU())
+    
+    def forward(self, x, y):
+
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+
+        out = self.fc(out)
+
+
+        if self.training:
+            loss = self.ce(out, y)
+
+
+        if self.training:
+            return loss
+        else:
+            return out.detach()
+
+    def summary(self):
+        print("model:",self)  
+        total_params = 0
+        for name, parameter in self.named_parameters():
+            if not parameter.requires_grad: continue
+            params = parameter.numel()
+            total_params+=params
+            print(name, params)
+        print(f"Total Trainable Params: {total_params}")
+        return total_params
+    
+
