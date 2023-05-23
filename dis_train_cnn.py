@@ -214,7 +214,7 @@ def main():
             torch.cuda.synchronize()
             print("ep%s_train_time %s"%(epoch ,time.process_time()-ep_train_start_time))
             
-            valid_acc,valid_AUC,valid_entr = [],[],[]
+            #valid_acc,valid_AUC,valid_entr = [],[],[]
             with torch.no_grad():
                 
                 ### shortcut testing

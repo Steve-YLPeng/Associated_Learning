@@ -409,8 +409,9 @@ class LSTMModel(nn.Module):
 class alModel(nn.Module):
     def __init__(self, num_layer, l1_dim, class_num, lab_dim, emb_dim=None):
         super().__init__()
-        
         self.num_layer = num_layer
+        self.conf_type = "max"
+        self.data_distribution = [0 for _ in range(self.num_layer)]
         self.history = {"train_acc":[],"valid_acc":[],"train_loss":[],
                         "train_AUC":[],"valid_AUC":[],
                         "train_r2":[],"valid_r2":[],
@@ -516,7 +517,10 @@ class TransformerModelML(alModel):
         # Samples with (entropy > threshold) will go to next layer
         # max_depth: the max depth of layer a sample will go throught
         #######################################################
-        max_depth = self.num_layer if max_depth==None else max_depth
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
         entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
@@ -524,7 +528,7 @@ class TransformerModelML(alModel):
         mask = self.get_mask(x)
         x_out = x
         for idx in range(self.num_layer):
-            if idx >= max_depth: break
+
             # f forward
             x_out = self.layer_forward(x_out, idx, mask)
             # return form b/h
@@ -532,16 +536,26 @@ class TransformerModelML(alModel):
 
             y_entr = confidence(y_out)
 
-            total_remain_idx = entr>threshold
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-            remain_idx = y_entr>threshold
-            
+
+            total_remain_idx[total_remain_idx==True] = remain_idx
+
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
             mask = mask[remain_idx,:]
-            if x_out.size(0) == 0: break
-    
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        
         return pred, entr
     
     @torch.no_grad()
@@ -650,7 +664,10 @@ class LSTMModelML(alModel):
         # Samples with (entropy > threshold) will go to next layer
         # max_depth: the max depth of layer a sample will go throught
         #######################################################
-        max_depth = self.num_layer if max_depth==None else max_depth
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
         entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
@@ -658,7 +675,7 @@ class LSTMModelML(alModel):
         x_out = x
         hidden = None
         for idx in range(self.num_layer):
-            if idx >= max_depth: break
+            
             # f forward
             x_out, hidden = self.layer_forward(x_out, idx, hidden)
             # return form b/h
@@ -666,20 +683,29 @@ class LSTMModelML(alModel):
 
             y_entr = confidence(y_out)
             
-            total_remain_idx = entr>threshold
-            
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
+                
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-
-            remain_idx = y_entr>threshold
-
+            
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
             if idx != 0:
                 (h, c) = hidden
                 h = h[:,remain_idx,:]
                 c = c[:,remain_idx,:]
                 hidden = (h, c)
-            if x_out.size(0) == 0: break
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
     
         return pred, entr
     
@@ -774,6 +800,7 @@ class LinearModelML(alModel):
         if max_depth==None:
            max_depth = self.num_layer 
         assert 1 <= max_depth and max_depth <= self.num_layer
+        
         entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
         pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
         total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
@@ -788,17 +815,24 @@ class LinearModelML(alModel):
 
             y_entr = confidence(y_out)
 
-            total_remain_idx = entr>threshold
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-
-            remain_idx = y_entr>threshold
-
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
-
-            if x_out.size(0) == 0: break
-    
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        
         return pred, entr
     
     @torch.no_grad()
@@ -1153,19 +1187,28 @@ class TransformerALsideText(alSideModel):
             
             # filter
             y_entr = confidence(y_out)
-            remain_idx = y_entr>threshold
-            total_remain_idx = entr>threshold
+            
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
+            total_remain_idx[total_remain_idx==True] = remain_idx
             
-            if sum(remain_idx) == 0: break
-            if idx+1 >= max_depth: break
-            
+            # remained X forward to next layer
             mask_cat = mask_cat[remain_idx,:]
             x_out = x_out[remain_idx,:]
             x = x[remain_idx,:]
             mask = mask[remain_idx,:]
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        
         return pred, entr
             
     @torch.no_grad()
@@ -1327,19 +1370,28 @@ class LSTMALsideText(alSideModel):
             
             # filter
             y_entr = confidence(y_out)
-            remain_idx = y_entr>threshold
-            total_remain_idx = entr>threshold
+            
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
+            total_remain_idx[total_remain_idx==True] = remain_idx
             
-            if sum(remain_idx) == 0: break
-            if idx+1 >= max_depth: break
-            
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
             x = x[remain_idx,:]
             h = h[:,remain_idx,:]
             c = c[:,remain_idx,:]
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        
         return pred, entr
         
     @torch.no_grad()
@@ -1483,17 +1535,25 @@ class LinearALsideText(alSideModel):
                 
             # filter
             y_entr = confidence(y_out)
-            remain_idx = y_entr>threshold
-            total_remain_idx = entr>threshold
+            
+            if self.conf_type == "entropy":
+                remain_idx = y_entr>threshold
+            elif self.conf_type == "max":    
+                remain_idx = y_entr<threshold
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
+            total_remain_idx[total_remain_idx==True] = remain_idx
             
-            if sum(remain_idx) == 0: break
-            if idx+1 >= max_depth: break
-            
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
             x = x[remain_idx,:]
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
             
         return pred, entr
     

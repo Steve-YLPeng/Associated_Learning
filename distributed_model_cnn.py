@@ -114,18 +114,15 @@ class cnn_alModel(alModel):
             
             entr[total_remain_idx] = y_entr
             pred[total_remain_idx,:] = y_out
-            
-            
-            
             total_remain_idx[total_remain_idx==True] = remain_idx
             
+            # remained X forward to next layer
             x_out = x_out[remain_idx,:]
+            
             if x_out.size(0) == 0 or idx+1 == max_depth:  
                 self.data_distribution[idx] += len(remain_idx)
                 break
             else:
-                #print(torch.sum(y_out, dim=-1))
-                #print(y_entr)
                 self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
         #print(data_distribution)
         return pred, entr

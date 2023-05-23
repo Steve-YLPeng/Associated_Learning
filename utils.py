@@ -199,7 +199,7 @@ def get_data(args):
         vocab = create_vocab(corpus)
         
         clean_train, clean_test, train_label, test_label = train_test_split(text, label, test_size=0.2, random_state=35)
-        clean_valid, clean_test, valid_label, test_label = train_test_split(clean_test, test_label, test_size=0.5, random_state=35)
+        
     
     elif args.dataset ==  "ca_housing":
 
@@ -352,8 +352,6 @@ def get_data(args):
     else:
         from datasets import load_dataset
         train_data = load_dataset(args.dataset, split='train')
-        #valid_data = load_dataset(args.dataset, split='test[:50%]')
-        #test_data = load_dataset(args.dataset, split='test[50%:]')
         test_data = load_dataset(args.dataset, split='test').shuffle(seed=35)
 
         if args.dataset == 'dbpedia_14':
@@ -379,39 +377,25 @@ def get_data(args):
             class_num = 2
             test_data = load_dataset(args.dataset, split='validation').shuffle(seed=35)
             
-        # shuffle and split testset to 50/50
-        split_size = int(test_data.num_rows*0.5)
-        valid_data = test_data[:split_size]
-        test_data = test_data[split_size:]
-        
         train_text = [b[tf] for b in train_data]
-        #test_text = [b[tf] for b in test_data]
-        #valid_text = [b[tf] for b in valid_data]
-        test_text = test_data[tf]
-        valid_text = valid_data[tf]
-        
+        test_text = [b[tf] for b in test_data]
+
         train_label = [b['label'] for b in train_data]
-        #test_label = [b['label'] for b in test_data]
-        #valid_label = [b['label'] for b in valid_data]
-        test_label = test_data['label']
-        valid_label = valid_data['label']
-        
+        test_label = [b['label'] for b in test_data]
+
         clean_train = [data_preprocessing(t, True) for t in train_text]
         clean_test = [data_preprocessing(t, True) for t in test_text]
-        clean_valid = [data_preprocessing(t, True) for t in valid_text]
 
         vocab = create_vocab(clean_train)
 
     if args.task == "text":
         trainset = Textset(clean_train, train_label, vocab, args.max_len)
         testset = Textset(clean_test, test_label, vocab, args.max_len)
-        validset = Textset(clean_valid, valid_label, vocab, args.max_len)
         train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
-        valid_loader = DataLoader(validset, batch_size=args.batch_test, collate_fn = validset.collate)
 
-        print(f"train size {len(trainset)}, valid size {len(validset)}, test size {len(testset)}")
-        return train_loader, valid_loader, test_loader, class_num, vocab
+        print(f"train size {len(trainset)}, test size {len(testset)}")
+        return train_loader, test_loader, class_num, vocab
     
     elif args.task == "regression" :
         trainset = StructDataset(feature_train, train_target)
@@ -419,7 +403,7 @@ def get_data(args):
         train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
         
-        return train_loader, valid_loader, test_loader, target_num
+        return train_loader, test_loader, target_num
     
     elif args.task == "classification":
         trainset = StructDataset(feature_train, train_target)
@@ -427,7 +411,7 @@ def get_data(args):
         train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
         test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
         
-        return train_loader, valid_loader, test_loader, class_num
+        return train_loader, test_loader, class_num
 
 
 def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):
