@@ -443,15 +443,34 @@ class alModel(nn.Module):
             super().train(is_train) 
              
     def summary(self):
-        print("model:",self)  
-        total_params = 0
-        for name, parameter in self.named_parameters():
-            if not parameter.requires_grad: continue
-            params = parameter.numel()
-            total_params+=params
-            print(name, params)
-        print(f"Total Trainable Params: {total_params}")
-        return total_params
+        for layer in range(self.num_layer):
+            m = self.layers[layer].enc.f
+            total_params = 0
+            for name, parameter in m.named_parameters():
+                if not parameter.requires_grad: continue
+                params = parameter.numel()
+                total_params+=params
+                #print(name, params)
+            print(f"L{layer}f Total Trainable Params: {total_params}")
+            
+            m = self.layers[layer].enc.b
+            total_params = 0
+            for name, parameter in m.named_parameters():
+                if not parameter.requires_grad: continue
+                params = parameter.numel()
+                total_params+=params
+                #print(name, params)
+            print(f"L{layer}b Total Trainable Params: {total_params}")
+            
+            m = self.layers[layer].ae
+            total_params = 0
+            for name, parameter in m.named_parameters():
+                if not parameter.requires_grad: continue
+                params = parameter.numel()
+                total_params+=params
+                #print(name, params)
+            print(f"L{layer}ae Total Trainable Params: {total_params}")
+            
     
 class TransformerModelML(alModel):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
