@@ -36,7 +36,8 @@ def get_args():
 
     # training param
     parser.add_argument('--lr', type=float, help='lr', default=0.001)
-    parser.add_argument('--batch-size', type=int, help='batch-size', default=64)
+    parser.add_argument('--batch-train', type=int, help='batch-size', default=128)
+    parser.add_argument('--batch-test', type=int, help='batch-size', default=1024)
     parser.add_argument('--one-hot-label', type=bool,
                         help='if true then use one-hot vector as label input, else integer', default=True)
     parser.add_argument('--epoch', type=int, default=20)

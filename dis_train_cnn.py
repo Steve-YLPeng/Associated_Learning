@@ -132,6 +132,9 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="image",):
         for x, y in data_loader:
                                
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
+            #print(x.size())
+            #print(y.size())
+            
             pred = model.inference(x, shortcut)
             
             #y_entr = torch.cat((y_entr, torch.sum(torch.special.entr(pred).cpu(),dim=-1)), 0)            

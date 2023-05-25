@@ -117,8 +117,9 @@ class ENC(nn.Module):
         elif f == 'cnn':
             flatten_size = out_dim
             self.f = conv
-            self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
-        
+            #self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
+            self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, lab_dim), nn.Sigmoid())
+
         self.cri = nn.MSELoss()
     
     def forward(self, x, tgt, mask=None, hidden=None):
