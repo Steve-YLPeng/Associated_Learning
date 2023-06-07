@@ -94,19 +94,10 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
                 num += x.size(0)
                 
                 data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-        #train_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
         
-        
-        #train_loss = numpy.sum(tot_loss, axis=0)
-        #model.history["train_AUC"].append(train_AUC)
-        #model.history["train_acc"].append(train_acc)
-        #model.history["train_loss"].append(train_loss)
-        #print(train_loss)
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
-        del y_out
-        del y_tar
-        #print("train_gc",gc.collect())
+
         
     elif task == "regression":
         out_loss, num, tot_loss = 0, 0, []
@@ -148,18 +139,12 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
-    #y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
     for x, y in data_loader:
         x, y = x.cuda(), y.cuda()
         pred, entr = model.inference_adapt(x, threshold=threshold, max_depth=max_depth)
-        #y_entr = torch.cat((y_entr, entr.cpu()), 0)            
-        #y_out = torch.cat((y_out, pred.cpu()), 0)
-        #y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
         cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
         num += x.size(0)
-    #valid_entr = torch.mean(y_entr).item()
-    #valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
-    #valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
+
     valid_acc = cor/num    
     return valid_acc
 
@@ -289,9 +274,6 @@ def main():
                     ep_test_start_time = time.process_time()
                     acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
                     criteria = acc
-                    #valid_AUC.append(AUC)
-                    #valid_acc.append(acc)
-                    #valid_entr.append(entr)
                     if args.lr_schedule != None:
                         model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
@@ -312,9 +294,6 @@ def main():
                     model.data_distribution = [0 for _ in range(model.num_layer)]
                     acc = test_adapt(model, valid_loader, threshold=threshold, max_depth=args.train_mask)
                     criteria = acc
-                    #valid_AUC.append(AUC)
-                    #valid_acc.append(acc)
-                    #valid_entr.append(entr)
                     #if args.lr_schedule != None:
                     #    model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
@@ -326,19 +305,8 @@ def main():
                         best_epoch = epoch
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
-                
-            #model.history["valid_acc"].append(valid_acc)
-            #model.history["valid_AUC"].append(valid_AUC)
-            #model.history["valid_entr"].append(valid_entr)
 
         print('Best Acc', best_AUC, best_epoch, best_para)
-        #print('train_as_loss', numpy.array(model.history["train_loss"]).T[0])
-        #print('train_ae_loss', numpy.array(model.history["train_loss"]).T[1])
-        #print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
-        #print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
-        #print('train_acc', numpy.array(model.history["train_acc"]).shape)
-            
-    #plotResult(model, out_path, args.task)
     
     torch.cuda.synchronize()    
     print("total_train+valid_time %s"%(time.process_time()-total_train_time))

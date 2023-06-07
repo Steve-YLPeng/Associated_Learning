@@ -175,8 +175,8 @@ class EMBLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
         
     def forward(self, x, y, mask=None, h=None):
 
@@ -210,8 +210,8 @@ class TransLayer(nn.Module):
 
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
     
     def forward(self, x, y, mask):
 
@@ -247,8 +247,8 @@ class LSTMLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
 
     def forward(self, x, y, mask=None, h=None):
 
@@ -289,8 +289,8 @@ class LinearLayer(nn.Module):
     
         self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
         self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.5, patience=3)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.5, patience=3)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
 
     def forward(self, x, y):
 
