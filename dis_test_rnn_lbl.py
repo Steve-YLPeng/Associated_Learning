@@ -191,7 +191,7 @@ def main():
                 
                 ### shortcut testing
                 for layer in range(model.num_layer):
-                    ep_test_start_time = time.process_time()
+                    #ep_test_start_time = time.process_time()
                     acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
                     test_acc[max_depth].append(acc)
                     torch.cuda.synchronize()
@@ -202,7 +202,7 @@ def main():
                 test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
                 for threshold in test_threshold:
                     print("gc",gc.collect())
-                    test_start_time = time.process_time()
+                    #test_start_time = time.process_time()
                     model.data_distribution = [0 for _ in range(model.num_layer)]
                     acc = test_adapt(model, valid_loader, threshold=threshold, max_depth=max_depth+1)
                     test_acc[max_depth].append(acc)
