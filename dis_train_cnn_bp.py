@@ -87,7 +87,7 @@ def train(model:nn.Module, data_loader:DataLoader, epoch:int, aug_type:str, data
                     y = torch.cat([y, y])
 
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
-            
+            print(x.size(),y.size())
             model.train()
             optimizer.zero_grad()
             losses = model(x, y)

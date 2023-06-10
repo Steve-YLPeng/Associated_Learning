@@ -486,6 +486,96 @@ class VGG_AL_side(VGG_AL):
     
         return pred, entr
     
+class resnet_AL_side(resnet18_AL):    
+    def __init__(self, num_layer:int, l1_dim:int, lr:float, class_num:int, lab_dim:int=128):
+        super().__init__(num_layer, l1_dim, lr, class_num, lab_dim)
+        
+        self.num_layer = 4
+        self.side_layers = ModuleList([None])
+        ### L1
+        conv1 = nn.Sequential(nn.Conv2d(3, 64, kernel_size = 3, stride = 1, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv1)
+        ### L2
+        conv2 = nn.Sequential(nn.Conv2d(3, 128, kernel_size = 3, stride = 2, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv2)
+        ### L2
+        conv3 = nn.Sequential(nn.Conv2d(3, 256, kernel_size = 3, stride = 4, bias = False, padding = 1), nn.ReLU())
+        self.side_layers.append(conv3)
+    
+    def forward(self, x, y):
+        layer_loss = []
+        y = torch.nn.functional.one_hot(y, self.class_num).float().to(y.device)
+        x_out = x
+        y_out = y
+
+        # forward function also update
+        for idx,layer in enumerate(self.layers):
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                x_out = x_out + side
+            x_out, y_out, ae_out, as_out = layer(x_out, y_out)
+            layer_loss.append([ae_out.item(), as_out.item()])
+        return layer_loss
+    
+    ### func for inference_adapt
+    def layer_forward(self, x, idx):
+        x_out = self.layers[idx].enc.f(x) 
+        return x_out
+    
+    def bridge_return(self, x, len_path):
+        x_out = x 
+        y_out = self.layers[len_path].enc.b(x_out)
+        for idx in reversed(range(len_path+1)):
+            y_out = self.layers[idx].ae.h(y_out)
+        return y_out
+
+    @torch.no_grad()
+    def inference_adapt(self, x, threshold=0.1, max_depth=None):
+        #######################################################
+        # x: batch of input sample
+        # Samples with (entropy > threshold) will go to next layer
+        # max_depth: the max depth of layer a sample will go throught
+        #######################################################
+        if max_depth==None:
+           max_depth = self.num_layer
+        assert 1 <= max_depth and max_depth <= self.num_layer
+        
+        entr = torch.ones(x.size(0), requires_grad=False).cuda() #[batch_size] 
+        pred = torch.zeros((x.size(0), self.class_num), requires_grad=False).cuda() #[batch_size, label_size]
+        total_remain_idx = torch.ones(x.size(0), dtype=torch.bool).cuda() #[batch_size]
+        
+        x_out = x
+        for idx in range(self.num_layer):
+            # f forward
+            if idx != 0:
+                side = self.side_layers[idx](x)
+                x_out = x_out + side
+            x_out = self.layer_forward(x_out, idx)
+            # return form b/h
+            y_out = self.bridge_return(x_out, idx)
+
+            y_entr = confidence(y_out)
+
+  
+            remain_idx = y_entr<threshold
+            
+            entr[total_remain_idx] = y_entr
+            pred[total_remain_idx,:] = y_out
+            total_remain_idx[total_remain_idx==True] = remain_idx
+            
+            x_out = x_out[remain_idx,:]
+            x = x[remain_idx,:]
+            
+            if x_out.size(0) == 0 or idx+1 == max_depth:  
+                self.data_distribution[idx] += len(remain_idx)
+                break
+            else:
+                self.data_distribution[idx] += torch.sum((~remain_idx).int()).item()
+        
+    
+        return pred, entr
+  
+
 class CNN(nn.Module):
     def __init__(self, class_num):
         super(CNN, self).__init__()

@@ -101,7 +101,7 @@ def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, datase
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
-    y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
+
     for x, y in data_loader:
         x, y = x.cuda(), y.cuda()
         pred, entr = model.inference_adapt(x, threshold=threshold, max_depth=max_depth)

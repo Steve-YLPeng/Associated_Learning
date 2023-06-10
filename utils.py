@@ -392,7 +392,7 @@ def get_data(args):
         trainset = Textset(clean_train, train_label, vocab, args.max_len)
         testset = Textset(clean_test, test_label, vocab, args.max_len)
         train_loader = DataLoader(trainset, batch_size=args.batch_train, collate_fn = trainset.collate, shuffle=True)
-        test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate)
+        test_loader = DataLoader(testset, batch_size=args.batch_test, collate_fn = testset.collate, shuffle=True)
 
         print(f"train size {len(trainset)}, test size {len(testset)}")
         return train_loader, test_loader, class_num, vocab

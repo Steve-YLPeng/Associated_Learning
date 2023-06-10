@@ -12,6 +12,7 @@ import os
 import numpy
 import gc
 import time
+import numpy as np
 
 stop_words = set(stopwords.words('english'))
         
@@ -67,35 +68,6 @@ def get_args():
 
     return args
 
-
-def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=None):
-    if task == "text":
-        
-        cor, num, tot_loss = 0, 0, []
-        y_out, y_tar = torch.Tensor([]),torch.Tensor([])
-        data_loader = tqdm(data_loader)
-        
-        model.train(True, layer_mask)
-        for step, (x, y) in enumerate(data_loader):
-            # training step
-            x, y = x.cuda(), y.cuda()
-            losses = model(x, y)
-            tot_loss.append(losses)
-            # validation step
-            with torch.no_grad():
-                pred = model.inference(x)
-                
-                y_out = torch.cat((y_out, pred.cpu()), 0)
-                y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
-                
-                cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
-                num += x.size(0)
-                
-                data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
-        train_acc = cor/num
-        
-        print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
-
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
@@ -127,8 +99,8 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
 
 def main():
     
-    ### start of init
     
+    ### start of init
     init_start_time = time.process_time()
     args = get_args()
     if args.side_dim is not None:
@@ -140,12 +112,8 @@ def main():
     
     
     save_path = f"{args.save_dir}/{path_name}"
-    out_path = f"{args.out_dir}/{path_name}"
-    if args.load_dir is not None:
-        load_path = f"{args.load_dir}/{path_name}"
-    
-        
-    
+
+
     if args.task == "text":
         train_loader, valid_loader, class_num, vocab = get_data(args)
         word_vec = get_word_vector(vocab, args.word_vec)
@@ -159,13 +127,13 @@ def main():
         
         elif args.model == 'transformeralside':
             model = TransformerALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
-                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+                                        emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'linearalside':
             model = LinearALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
-                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+                                        emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'lstmalside':
             model = LSTMALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
-                                          emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+                                        emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         
         
 
@@ -174,43 +142,71 @@ def main():
         
     torch.cuda.synchronize()    
     print("init_time %s"%(time.process_time()-init_start_time))
-    print('Start Training')
-    total_train_time = time.process_time()
+        
+        
+    test_acc_list = []
+    test_time_list = []
     
-    ### start of training/validation
-    
-    if args.task == "text":
-        test_acc = [[] for max_depth in range(model.num_layer)]
-        for max_depth in range(model.num_layer):
-            best_AUC = 0
-            best_epoch = -1
-            layer_mask = {max_depth}
-            
-            model.load_state_dict(torch.load(f'{save_path}_m{max_depth}.pt'))
-            with torch.no_grad():
+    for test_count in range(10):
+        train_loader, valid_loader, class_num, vocab = get_data(args)
+        del train_loader
+        ### start of training/validation
+        
+        if args.task == "text":
+            test_acc = [[] for max_depth in range(model.num_layer)]
+            test_time = [[] for max_depth in range(model.num_layer)]
+            for max_depth in range(model.num_layer):
+                best_AUC = 0
+                best_epoch = -1
+                layer_mask = {max_depth}
                 
-                ### shortcut testing
-                for layer in range(model.num_layer):
-                    #ep_test_start_time = time.process_time()
-                    acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
-                    test_acc[max_depth].append(acc)
-                    torch.cuda.synchronize()
-                    print(f'Test layer{layer} Acc {acc}')
-                    #print("l%s_test_time %s"%( layer ,time.process_time()-ep_test_start_time))
+                model.load_state_dict(torch.load(f'{save_path}_m{max_depth}.pt'))
+                with torch.no_grad():
+                    
+                    ### shortcut testing
+                    for layer in range(model.num_layer):
+                        gc.collect()
+                        test_start_time = time.process_time()
+                        acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
+                        
+                        torch.cuda.synchronize()
+                        test_time[max_depth].append(time.process_time()-test_start_time)
+                        test_acc[max_depth].append(acc)
+                        #print(f'Test layer{layer} Acc {acc}')
+                        #print("l%s_test_time %s"%( layer ,time.process_time()-ep_test_start_time))
 
-                ### adaptive testing    
-                test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
-                for threshold in test_threshold:
-                    print("gc",gc.collect())
-                    #test_start_time = time.process_time()
-                    model.data_distribution = [0 for _ in range(model.num_layer)]
-                    acc = test_adapt(model, valid_loader, threshold=threshold, max_depth=max_depth+1)
-                    test_acc[max_depth].append(acc)
-                    torch.cuda.synchronize()
-                    print(f'Test threshold {threshold} Acc {acc}')
-                    #print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
-                    print("data_distribution ",model.data_distribution)
-            
+                    ### adaptive testing    
+                    test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
+                    for threshold in test_threshold:
+                        gc.collect()
+                        test_start_time = time.process_time()
+                        model.data_distribution = [0 for _ in range(model.num_layer)]
+                        acc = test_adapt(model, valid_loader, threshold=threshold, max_depth=max_depth+1)
+                        
+                        torch.cuda.synchronize()
+                        test_time[max_depth].append(time.process_time()-test_start_time)
+                        test_acc[max_depth].append(acc)
+                        #print(f'Test threshold {threshold} Acc {acc}')
+                        #print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
+                        #print("data_distribution ",model.data_distribution)
+        test_acc_list.append(test_acc)
+        test_time_list.append(test_time)
+        print(test_count)
         print(test_acc)
-    
+        print(test_time)
+    test_acc_avg = np.mean(test_acc_list, axis=0)
+    test_acc_std = np.std(test_acc_list, axis=0)     
+    test_time_avg = np.mean(test_time_list, axis=0)
+    test_time_std = np.std(test_time_list, axis=0)
+    print(test_acc_avg)
+    print(test_acc_std)
+    print(test_acc_std.shape)
+    print(test_time_avg)
+    print(test_time_std)
+    print(test_time_std.shape)
+    with open(f'{args.out_dir}/test.npy', 'wb') as f:
+        np.save(f, test_acc_avg)
+        np.save(f, test_acc_std)
+        np.save(f, test_time_avg)
+        np.save(f, test_time_std)
 main()
