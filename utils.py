@@ -176,7 +176,7 @@ def get_img_data(args):
         test_set = datasets.ImageFolder('./data/tiny-imagenet-200/val', transform=test_transform)
 
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bsz, shuffle=True, pin_memory=True, num_workers=4)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=test_bsz, shuffle=False, pin_memory=True)
+    test_loader = torch.utils.data.DataLoader(test_set, batch_size=test_bsz, shuffle=True, pin_memory=True)
 
     return train_loader, test_loader, n_classes
 def get_data(args):
