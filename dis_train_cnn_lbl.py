@@ -80,8 +80,10 @@ def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, datase
 
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
             losses = model(x, y)
-            tot_loss.append(losses)
             
+            
+            """
+            tot_loss.append(losses)
             #model.eval()
             with torch.no_grad():
                 pred = model.inference(x)
@@ -96,7 +98,7 @@ def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, datase
         train_acc = cor/num
 
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
-
+        """
 
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
