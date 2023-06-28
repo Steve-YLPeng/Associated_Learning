@@ -96,7 +96,7 @@ def train(model:alModel, data_loader:DataLoader, epoch, task="text", layer_mask=
         train_acc = cor/num
         
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
-        """
+    """
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
@@ -170,9 +170,9 @@ def main():
         
         
     if args.load_dir != None:
-        print("Load ckpt from", f'{load_path}_m2.pt')
+        print("Load ckpt from", f'{load_path}.pt')
         
-        model.load_state_dict(torch.load(f'{load_path}_m2.pt'))
+        model.load_state_dict(torch.load(f'{load_path}.pt'))
     else:
         model.apply(initialize_weights)
     model = model.cuda()
@@ -187,7 +187,7 @@ def main():
     
     if args.task == "text":
 
-        for max_depth in range(3,model.num_layer):
+        for max_depth in range(model.num_layer):
             best_AUC = 0
             best_epoch = -1
             layer_mask = {max_depth}

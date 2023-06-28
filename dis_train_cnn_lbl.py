@@ -66,7 +66,7 @@ def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, datase
         
         cor, num, tot_loss = 0, 0, []
         y_out, y_tar = torch.Tensor([]),torch.Tensor([])
-        data_loader = tqdm(data_loader)
+        #data_loader = tqdm(data_loader)
         
         model.train(True, layer_mask)
         for step, (x, y) in enumerate(data_loader):
