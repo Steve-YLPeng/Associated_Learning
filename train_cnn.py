@@ -1,15 +1,11 @@
 import argparse
 import torch
 from torch.utils.data import DataLoader
-from torch.nn.functional import mse_loss
-from torchmetrics.functional import r2_score, auroc, f1_score
 from utils import *
-# from model import Model
 from distributed_model import *
 from distributed_model_cnn import*
 from tqdm import tqdm
 import os
-import numpy
 import gc
 import time
 
@@ -44,7 +40,7 @@ def get_args():
     parser.add_argument('--model', type=str, default='CNN_AL')
     parser.add_argument('--task', type=str, default="image")
     parser.add_argument('--feature-dim', type=int, default=0)
-    parser.add_argument('--lr-schedule', type=str, default=None)
+    parser.add_argument('--lr-schedule', type=str, default="plateau")
     parser.add_argument('--train-mask', type=int, default=None)
     parser.add_argument('--prefix-mask', action='store_true')
     parser.add_argument('--side-dim', type=str, default=None)
@@ -77,75 +73,49 @@ def train(model:alModel, data_loader:DataLoader, epoch:int, aug_type:str, datase
                 else:
                     x = torch.cat(x)
                     y = torch.cat([y, y])
-
+            
+            # training step
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
             losses = model(x, y)
             tot_loss.append(losses)
             
-            #model.eval()
+            # validation step 
             with torch.no_grad():
                 pred = model.inference(x)
-                
                 y_out = torch.cat((y_out, pred.cpu()), 0)
                 y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
                 cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
                 num += x.size(0)
-                
                 data_loader.set_description(f'Train {epoch} | Acc {cor/num} ({cor}/{num})')
 
-        #train_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
         train_acc = cor/num
         
-        
-        #train_loss = numpy.sum(tot_loss, axis=0)
-        #model.history["train_AUC"].append(train_AUC)
-        #model.history["train_acc"].append(train_acc)
-        #model.history["train_loss"].append(train_loss)
-        #print(train_loss)
         print(f'Train Epoch{epoch} Acc {train_acc} ({cor}/{num})')
 
 
 def test_adapt(model:alModel, data_loader:DataLoader, threshold=0.1, max_depth=None):
     model.eval()
     cor, num = 0, 0
-    #y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
     for x, y in data_loader:
         x, y = x.cuda(), y.cuda()
         pred, entr = model.inference_adapt(x, threshold=threshold, max_depth=max_depth)
-        #y_entr = torch.cat((y_entr, entr.cpu()), 0)            
-        #y_out = torch.cat((y_out, pred.cpu()), 0)
-        #y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
+
         cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
         num += x.size(0)
-    #valid_entr = torch.mean(y_entr).item()
-    #valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
-    #valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
+
     valid_acc = cor/num    
     return valid_acc
 
 def test(model:alModel, data_loader:DataLoader, shortcut=None, task="image",):
     if task == "image":
         model.eval()
-        cor, num = 0, 0
-        #y_out, y_tar, y_entr = torch.Tensor([]),torch.Tensor([]),torch.Tensor([])
-        
+        cor, num = 0, 0        
         for x, y in data_loader:
-                               
             x, y = x.cuda(non_blocking=True), y.cuda(non_blocking=True)
-            #print(x.size())
-            #print(y.size())
-            
             pred = model.inference(x, shortcut)
-            
-            #y_entr = torch.cat((y_entr, torch.sum(torch.special.entr(pred).cpu(),dim=-1)), 0)            
-            #y_out = torch.cat((y_out, pred.cpu()), 0)
-            #y_tar = torch.cat((y_tar, y.cpu().int()), 0).int()
             cor += (pred.argmax(-1).view(-1) == y.view(-1)).sum().item()
             num += x.size(0)
 
-        #valid_entr = torch.mean(y_entr).item()
-        #valid_AUC = auroc(y_out,y_tar.view(-1),num_classes=model.class_num,average='macro').item()
-        #valid_f1 = f1_score(y_out.argmax(-1).view(-1), y_tar.view(-1), average='micro')
         valid_acc = cor/num
 
         return valid_acc
@@ -166,7 +136,7 @@ def main():
         load_path = f"{args.load_dir}/{path_name}"
     
     if args.task == "image":
-        #train_loader, valid_loader, class_num = get_data(args)
+
         train_loader, valid_loader, class_num = get_img_data(args)
         if args.model == 'CNN_AL':
             model = CNN_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
@@ -203,6 +173,7 @@ def main():
     print('Start Training')
     total_train_time = time.process_time()
     
+    
     ### start of training/validation
     
     if args.task == "image":
@@ -210,26 +181,20 @@ def main():
         best_AUC = 0
         best_epoch = -1
         for epoch in range(args.epoch):
-            print("gc",gc.collect())
+            gc.collect()
             ep_train_start_time = time.process_time()
             train(model, train_loader, epoch, task=args.task, layer_mask=layer_mask,
                   aug_type=args.aug_type, dataset=args.dataset)
             torch.cuda.synchronize()
             print("ep%s_train_time %s"%(epoch ,time.process_time()-ep_train_start_time))
-            
-            #valid_acc,valid_AUC,valid_entr = [],[],[]
+
             with torch.no_grad():
                 
                 ### shortcut testing
-                
                 for layer in range(model.num_layer):
-                #for layer in [model.num_layer-1]:
                     ep_test_start_time = time.process_time()
                     acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
                     criteria = acc
-                    #valid_AUC.append(AUC)
-                    #valid_acc.append(acc)
-                    #valid_entr.append(entr)
                     if args.lr_schedule != None:
                         model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
@@ -244,16 +209,11 @@ def main():
                 ### adaptive testing    
                 test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
                 for threshold in test_threshold:
-                    print("gc",gc.collect())
+                    gc.collect()
                     test_start_time = time.process_time()
                     model.data_distribution = [0 for _ in range(model.num_layer)]
                     acc = test_adapt(model, valid_loader, threshold=threshold, max_depth=args.train_mask)
                     criteria = acc
-                    #valid_AUC.append(AUC)
-                    #valid_acc.append(acc)
-                    #valid_entr.append(entr)
-                    #if args.lr_schedule != None:
-                    #    model.schedulerStep(layer,criteria)
                     torch.cuda.synchronize()
                     print(f'Test threshold {threshold} Acc {acc}')
                     print("t%s_test_time %s"%( threshold ,time.process_time()-test_start_time))
@@ -263,19 +223,8 @@ def main():
                         best_epoch = epoch
                         print("Save ckpt to", f'{save_path}.pt', " ,ep",epoch)
                         torch.save(model.state_dict(), f'{save_path}.pt')
-                    
-            #model.history["valid_acc"].append(valid_acc)
-            #model.history["valid_AUC"].append(valid_AUC)
-            #model.history["valid_entr"].append(valid_entr)
-            
-            
         print('Best Acc', best_AUC, best_epoch)
-        #print('train_loss', numpy.array(model.history["train_loss"]).T.shape)
-        #print('valid_acc', numpy.array(model.history["valid_acc"]).T.shape)
-        #print('valid_AUC', numpy.array(model.history["valid_AUC"]).T.shape)
-        #print('train_acc', numpy.array(model.history["train_acc"]).shape)
-      
-    #plotResult(model, out_path, args.task)
+
 
     torch.cuda.synchronize()    
     print("total_train+valid_time %s"%(time.process_time()-total_train_time))
