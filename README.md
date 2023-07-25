@@ -1,4 +1,3 @@
-
 # Associated Learning
 
 ## 1.  Datasets
@@ -7,7 +6,7 @@
 - For cifar10, cifar100, and tinyImageNet, dataset will be automatically downloaded during the training
 ## 2. Word Embeddings
 - We uses pretrained embeddings in our experiments, please download GloVe, Fasttext with the following commands
-```linux=
+```bash=
 wget https://nlp.stanford.edu/data/glove.6B.zip
 wget https://dl.fbaipublicfiles.com/fasttext/vectors-english/wiki-news-300d-1M.vec.zip
 unzip glove.6B.zip
@@ -15,17 +14,17 @@ unzip wiki-news-300d-1M.vec.zip
 ```
 ## 3. Requirements Setup
 We developed the codes under Python 3.9.12 in Ubuntu. Install the required packages by
-```linux=
+```bash=
 mkdir ckpt
 pip install -r requirements.txt
 ```
 
 ## 4. Execution
-### Training RNN models
-```linux=
+For RNN AL models training, please run
+```bash=
 python3 train_rnn.py \
---dataset ag_news --max-len 177 \
---model transformeral \
+--dataset <DATASET> --max-len <MAX_LEN> \
+--model <MODEL> \
 --epoch 20 \
 --num-layer 4 \
 --batch-train 256 --batch-test 512 \
@@ -33,33 +32,36 @@ python3 train_rnn.py \
 --l1-dim 300 --label-emb 128 \
 --save-dir ./ckpt/  
 ```
-Config Settings
-- dataset = {ag_news, imdb, dbpedia_14}
-- max-len = {177, 500, 80}
-- model = {lstmal, linearal, transformeral}
+The parameter settings are as follows
+- dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
+- max-len: max lenth of input sequence for each dataset is ```177```, ```500```,and ```80``` respectively
+- model: can be one of ```lstmal```, ```linearal```, ```transformeral```
 
-### Training CNN models
 
-```linux=
+For CNN AL models training, please run
+```bash=
 python3 train_cnn.py \
---dataset cifar10 \
---model VGG_AL \
+--dataset <DATASET> \
+--model <MODEL> \
 --epoch 100 \
 --batch-train 128 --batch-test 1024 \
 --lr 0.0001 \
 --label-emb 500 \
 --save-dir ./ckpt/ 
 ```
-Config Settings
-- dataset = {cifar10, cifar100, tinyImageNet}
-- model = {CNN_AL, VGG_AL, resnet_AL}
-- For cnn AL models, num-layer is fixed to 4
+The parameter settings are as follows
+- dataset: can be one of ```cifar10```, ```cifar100```, ```tinyImageNet```
+- model: can be one of ```CNN_AL```, ```VGG_AL```, ```resnet_AL```
+- For cnn AL models, num-layer is fixed to ```4```
 
-### Training RNN layer-by-layer 
-```linux=
+Programs will train models based on the given parameters and will report the test accuracy for Shortcut/Adaptive inference each epoch.
+
+
+For Dynamic Layer Accumulation experiment, please run
+```bash=
 python3 train_rnn_lbl.py \
---dataset ag_news --max-len 177 \
---model transformeral \
+--dataset <DATASET> --max-len <MAX_LEN> \
+--model <MODEL> \
 --epoch 80 \
 --num-layer 4 \
 --batch-train 256 --batch-test 512 \
@@ -67,29 +69,21 @@ python3 train_rnn_lbl.py \
 --l1-dim 300 --label-emb 128 \
 --save-dir ./ckpt/  
 ```
-Config Settings
-- dataset = {ag_news, imdb, dbpedia_14}
-- max-len = {177, 500, 80}
-- model = {lstmal, linearal, transformeral}
-
-### Training CNN layer-by-layer 
-
-```linux=
+```bash=
 python3 train_cnn_lbl.py \
---dataset cifar10 \
---model VGG_AL \
+--dataset <DATASET> \
+--model <MODEL> \
 --epoch 400 \
 --batch-train 128 --batch-test 1024 \
 --lr 0.0001 \
 --label-emb 500 \
 --save-dir ./ckpt/ 
 ```
-Config Settings
-- data = {cifar10, cifar100, tinyImageNet}
-- model = {CNN_AL, VGG_AL, resnet_AL}
+Programs will train models layer-by-layer and will report the test accuracy for Shortcut/Adaptive inference each epoch. Each layer of the models is trained for ```epoch/num-layer``` epochs. 
+The parameter settings are the same as in the previous. 
 
-### Training RNN sideinput
-```linux=
+For SideInput experiment(IMDB as example), please run
+```bash=
 python3 train_rnn.py \
 --dataset imdb \
 --model transformeralside \
@@ -102,7 +96,7 @@ python3 train_rnn.py \
 --save-dir ./ckpt/ \
 --side-dim 100-100-100-100
 ```
-Config Settings
-- dataset = {ag_news, imdb, dbpedia_14}
-- model = {lstmalside, linearalside, transformeralside}
+The parameter settings are as follows
+- dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
+- model: the available options are ```lstmalside```, ```linearalside```, ```transformeralside```
 - side-dim: specify the sequence length of each layer's input, separated by ```-``` , and their sum must be equal to max-len 
