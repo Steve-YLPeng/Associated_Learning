@@ -101,4 +101,4 @@ The parameter settings are as follows
 - model: the available options are ```lstmalside```, ```linearalside```, ```transformeralside```
 - side-dim: specify the sequence length of each layer's input, separated by ```-``` , and their sum must be equal to max-len
 
-the programs will train models with the sideinput setting and will report the test accuracy for Shortcut/Adaptive inference each epoch.
+The programs will train models with the sideinput setting and will report the test accuracy for Shortcut/Adaptive inference each epoch.
