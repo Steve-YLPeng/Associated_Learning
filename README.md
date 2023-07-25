@@ -82,7 +82,7 @@ The programs will train models layer-by-layer and will report the test accuracy 
 The parameter settings are the same as in the previous. 
 
 
-For SideInput experiment(IMDB as example), please run
+For SideInput experiment (IMDB as example), please run
 ```bash=
 python3 train_rnn.py \
 --dataset imdb \
