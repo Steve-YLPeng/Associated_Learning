@@ -37,7 +37,6 @@ The parameter settings are as follows
 - max-len: max lenth of input sequence for each dataset is ```177```, ```500```,and ```80``` respectively
 - model: can be one of ```lstmal```, ```linearal```, ```transformeral```
 
-
 For CNN AL models training, please run
 ```bash=
 python3 train_cnn.py \
@@ -53,8 +52,7 @@ The parameter settings are as follows
 - dataset: can be one of ```cifar10```, ```cifar100```, ```tinyImageNet```
 - model: can be one of ```CNN_AL```, ```VGG_AL```, ```resnet_AL```
 - For cnn AL models, num-layer is fixed to ```4```
-
-Programs will train models based on the given parameters and will report the test accuracy for Shortcut/Adaptive inference each epoch.
+The programs will train models based on the given parameters and will report the test accuracy for Shortcut/Adaptive inference each epoch.
 
 
 For Dynamic Layer Accumulation experiment, please run
@@ -79,8 +77,9 @@ python3 train_cnn_lbl.py \
 --label-emb 500 \
 --save-dir ./ckpt/ 
 ```
-Programs will train models layer-by-layer and will report the test accuracy for Shortcut/Adaptive inference each epoch. Each layer of the models is trained for ```epoch/num-layer``` epochs. 
+The programs will train models layer-by-layer and will report the test accuracy for Shortcut/Adaptive inference each epoch. Each layer of the models is trained for ```epoch/num-layer``` epochs. 
 The parameter settings are the same as in the previous. 
+
 
 For SideInput experiment(IMDB as example), please run
 ```bash=
@@ -99,4 +98,5 @@ python3 train_rnn.py \
 The parameter settings are as follows
 - dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
 - model: the available options are ```lstmalside```, ```linearalside```, ```transformeralside```
-- side-dim: specify the sequence length of each layer's input, separated by ```-``` , and their sum must be equal to max-len 
+- side-dim: specify the sequence length of each layer's input, separated by ```-``` , and their sum must be equal to max-len
+the programs will train models with the sideinput setting and will report the test accuracy for Shortcut/Adaptive inference each epoch.
