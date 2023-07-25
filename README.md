@@ -52,6 +52,7 @@ The parameter settings are as follows
 - dataset: can be one of ```cifar10```, ```cifar100```, ```tinyImageNet```
 - model: can be one of ```CNN_AL```, ```VGG_AL```, ```resnet_AL```
 - For cnn AL models, num-layer is fixed to ```4```
+
 The programs will train models based on the given parameters and will report the test accuracy for Shortcut/Adaptive inference each epoch.
 
 
@@ -99,4 +100,5 @@ The parameter settings are as follows
 - dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
 - model: the available options are ```lstmalside```, ```linearalside```, ```transformeralside```
 - side-dim: specify the sequence length of each layer's input, separated by ```-``` , and their sum must be equal to max-len
+
 the programs will train models with the sideinput setting and will report the test accuracy for Shortcut/Adaptive inference each epoch.
