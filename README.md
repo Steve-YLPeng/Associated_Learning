@@ -46,10 +46,10 @@ The programs will report the test accuracy for Shortcut/Adaptive inference for e
   --save-dir ./ckpt/  
   ```
 
-    - The parameter settings are as follows
-      - dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
-      - max-len: max lenth of input sequence for each dataset is ```177```, ```500```,and ```80``` respectively
-      - model: can be one of ```lstmal```, ```linearal```, ```transformeral```
+  - The parameter settings are as follows
+    - dataset: can be one of ```ag_news```, ```imdb```, ```dbpedia_14```
+    - max-len: max lenth of input sequence for each dataset is ```177```, ```500```,and ```80``` respectively
+    - model: can be one of ```lstmal```, ```linearal```, ```transformeral```
 
   - For CNN AL models training, please run
   ```bash=
@@ -63,10 +63,10 @@ The programs will report the test accuracy for Shortcut/Adaptive inference for e
     --save-dir ./ckpt/ 
   ```
 
-    - The parameter settings are as follows
-      - dataset: can be one of ```cifar10```, ```cifar100```, ```tinyImageNet```
-      - model: can be one of ```CNN_AL```, ```VGG_AL```, ```resnet_AL```
-      - For cnn AL models, num-layer is fixed to ```4```
+  - The parameter settings are as follows
+    - dataset: can be one of ```cifar10```, ```cifar100```, ```tinyImageNet```
+    - model: can be one of ```CNN_AL```, ```VGG_AL```, ```resnet_AL```
+    - For cnn AL models, num-layer is fixed to ```4```
 
 
 ### Dynamic Layer Accumulation
