@@ -11,17 +11,13 @@ from collections import Counter
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy
-from sklearn.metrics import confusion_matrix    
-import seaborn as sn
-import pandas as pd
+from sklearn.metrics import confusion_matrix
+import seaborn
+import pandas
 from sklearn.model_selection import train_test_split
 from sklearn.datasets import fetch_california_housing, fetch_kddcup99
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from transformer.encoder import TransformerEncoder
-
-
-stop_words = set(stopwords.words('english'))
-
 
 
 class TwoCropTransform:
@@ -43,10 +39,12 @@ class Flatten(nn.Module):
         batch_size = x.shape[0]
         return x.view(batch_size, -1)
 
-### 
+# 
 def initialize_weights(model):
     if isinstance(model, nn.Linear):
         nn.init.xavier_uniform_(model.weight.data)
+        return
+    
     elif isinstance(model, nn.LSTM):
         for name, param in model.named_parameters():
             if 'bias' in name:
@@ -55,32 +53,34 @@ def initialize_weights(model):
                 nn.init.kaiming_normal_(param, nonlinearity='relu')
             elif 'weight_hh' in name:
                 nn.init.orthogonal_(param)
+        return
+    
     elif isinstance(model, nn.LSTM):
         for name, param in model.named_parameters():
             if 'bias' in name:
                 nn.init.constant_(param, 0.0)
             else:
                 nn.init.kaiming_normal_(param, nonlinearity='relu')
-    elif isinstance(model, TransformerEncoder):
         return
-        for name, param in model.named_parameters():
-            if 'bias' in name:
-                nn.init.constant_(param, 0.0)
-            elif 'weight_ih' in name:
-                nn.init.kaiming_normal_(param)
-            elif 'weight_hh' in name:
-                nn.init.orthogonal_(param)
+    
+    elif isinstance(model, TransformerEncoder):
+        # TransformerEncoder has its own initialization
+        return
+
 
 def confidence(pred, type="max"):
-    ### shannon entropy as confidence
     if type=="entropy":
+        # Use shannon entropy as confidence score
         return torch.sum(torch.special.entr(pred),dim=-1) / math.log(pred.size(-1))
-    ### max pred value as confidence
+    
     elif type=="max":
+        # Use max pred value as confidence score
         return torch.max(pred,dim=-1)[0]
+    
     else:
         raise ValueError("Confidence type not supported: {}".format(type))
-           
+
+
 def get_img_data(args):
     dataset = args.dataset
     train_bsz = args.batch_train
@@ -175,8 +175,8 @@ def get_img_data(args):
         train_set = datasets.ImageFolder('./data/tiny-imagenet-200/train', transform=source_transform)
         test_set = datasets.ImageFolder('./data/tiny-imagenet-200/val', transform=test_transform)
 
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=train_bsz, shuffle=True, pin_memory=True, num_workers=4)
-    test_loader = torch.utils.data.DataLoader(test_set, batch_size=test_bsz, shuffle=True, pin_memory=True)
+    train_loader = DataLoader(train_set, batch_size=train_bsz, shuffle=True, pin_memory=True, num_workers=4)
+    test_loader = DataLoader(test_set, batch_size=test_bsz, shuffle=True, pin_memory=True)
 
     return train_loader, test_loader, n_classes
 def get_data(args):
@@ -184,7 +184,7 @@ def get_data(args):
     if args.dataset == 'imdb':
                 
         class_num = 2
-        df = pd.read_csv('./IMDB_Dataset.csv')
+        df = pandas.read_csv('./IMDB_Dataset.csv')
         df['cleaned_reviews'] = df['review'].apply(data_preprocessing, True)
         #df["seq_lenth"] = df["cleaned_reviews"].apply(lambda x:len(x.split()))
         #df = df[df["seq_lenth"]>100]
@@ -205,7 +205,7 @@ def get_data(args):
 
         house_dataset = fetch_california_housing()
 
-        df = pd.DataFrame(
+        df = pandas.DataFrame(
             house_dataset.data,
             columns=house_dataset.feature_names
         )
@@ -233,8 +233,7 @@ def get_data(args):
         col_dense = [f"I{i}" for i in range(1,14)]
         col_sparse = [f"C{i}" for i in range(1,27)]
         
-        #df = pd.read_csv("criteo_small.csv")
-        df = pd.read_csv("criteo_medium.csv")
+        df = pandas.read_csv("criteo_medium.csv")
         
         df[col_sparse] = df[col_sparse].fillna('-1', )
         df[col_dense] = df[col_dense].fillna(0,)
@@ -248,8 +247,6 @@ def get_data(args):
         
         y = df[col_target]
         x = df[col_dense + col_sparse]
-        #x = df[col_dense]
-        #args.feature_dim = 13
         
         feature_train, feature_test, train_target, test_target = train_test_split(x, y, test_size=0.2)
         
@@ -263,7 +260,7 @@ def get_data(args):
         col_dense = ['duration', 'src_bytes', 'dst_bytes', 'land', 'wrong_fragment', 'urgent', 'hot', 'num_failed_logins', 'logged_in', 'num_compromised', 'root_shell', 'su_attempted', 'num_root', 'num_file_creations', 'num_shells', 'num_access_files', 'num_outbound_cmds', 'is_host_login', 'is_guest_login', 'count', 'srv_count', 'serror_rate', 'srv_serror_rate', 'rerror_rate', 'srv_rerror_rate', 'same_srv_rate', 'diff_srv_rate', 'srv_diff_host_rate', 'dst_host_count', 'dst_host_srv_count', 'dst_host_same_srv_rate',    'dst_host_diff_srv_rate', 'dst_host_same_src_port_rate', 'dst_host_srv_diff_host_rate', 'dst_host_serror_rate',  'dst_host_srv_serror_rate', 'dst_host_rerror_rate', 'dst_host_srv_rerror_rate']
         label = ['label'] 
         
-        df = pd.DataFrame(
+        df = pandas.DataFrame(
             dataset.data,
             columns=dataset.feature_names
         )
@@ -285,9 +282,9 @@ def get_data(args):
         col_sparse_hot = []
         df[col_sparse]
         for col in col_sparse:
-            onehot = pd.get_dummies(df[col], prefix=col)
+            onehot = pandas.get_dummies(df[col], prefix=col)
             col_sparse_hot += onehot.columns.to_list()
-            df = pd.concat((df,onehot), axis=1)
+            df = pandas.concat((df,onehot), axis=1)
         df = df.drop(col_sparse,axis=1)
         
         scaler = StandardScaler()
@@ -297,19 +294,17 @@ def get_data(args):
         df = df[df['label'] < 11]
         class_num = 11
         
-        data_train, data_test = pd.DataFrame(), pd.DataFrame()
+        data_train, data_test = pandas.DataFrame(), pandas.DataFrame()
         for _,group in df.groupby(label):
             train, test = train_test_split(group, test_size=0.2, random_state=3535)
-            data_train = pd.concat((data_train,train))
-            data_test = pd.concat((data_test,test))
+            data_train = pandas.concat((data_train,train))
+            data_test = pandas.concat((data_test,test))
+
         feature_train = data_train[col_dense[:]].astype('float64')
-        feature_test = data_test[col_dense[:]].astype('float64')
-        #feature_train = data_train[col_dense+col_sparse_hot].astype('float64')
-        #feature_test = data_test[col_dense+col_sparse_hot].astype('float64')   
+        feature_test = data_test[col_dense[:]].astype('float64') 
         train_target = data_train[label]
         test_target = data_test[label]
         args.feature_dim = feature_train.shape[1]
-        del df
             
     elif args.dataset == 'ailerons':
         
@@ -320,7 +315,6 @@ def get_data(args):
         dataset = load_dataset('LL0_296_ailerons')
 
         col_feature = dataset.X.columns[1:]
-        #col_target= dataset.y.columns[:]
 
         y = dataset.y.to_frame()
         x = dataset.X[col_feature]
@@ -332,7 +326,7 @@ def get_data(args):
         args.task = "regression"
         args.feature_dim = 125
         target_num = -1
-        df = pd.read_csv('./2022-train-v2.csv')
+        df = pandas.read_csv('./2022-train-v2.csv')
 
         c = 0
         col_target = df.columns[c:c+1]
@@ -415,27 +409,21 @@ def get_data(args):
 
 
 def plotConfusionMatrix(y_pred, y_true, label_name, save_filename=''):
-    
-
     labels = label_name
     cm = confusion_matrix(y_true, y_pred)
     print(cm)
     
-    df_cm = pd.DataFrame(cm, range(len(cm)), range(len(cm)))
-    # plt.figure(figsize=(10,7))
-    #sn.set(font_scale=1.4) # for label size
-    sn.heatmap(df_cm, annot=True, fmt='d', annot_kws={"size":6})
-    #sn.heatmap(df_cm, annot=True,vmin=0, vmax=500, fmt='d', annot_kws={"size":6})
-    
-    #sn.heatmap(df_cm, annot=True, fmt='d', annot_kws={"size":6})
+    df_cm = pandas.DataFrame(cm, range(len(cm)), range(len(cm)))
+    seaborn.heatmap(df_cm, annot=True, fmt='d', annot_kws={"size":6})
+
     plt.savefig(save_filename+"_cm.png")
     plt.show()
     return
     
     
 def plotResult(model, save_filename, task):
-    
     history = model.history
+
     # plot epoch loss
     epoch_layers_loss = numpy.array(history["train_loss"]).T
     epoch_layers_ae_loss = epoch_layers_loss[0,:,:]
@@ -455,10 +443,8 @@ def plotResult(model, save_filename, task):
         # plot epoch acc
         epoch_valid_acc = numpy.array(history["valid_acc"]).T
         for idx,acc in enumerate(epoch_valid_acc):
-            #plt.plot(acc, label='valid acc L'+str(idx+1))
             plt.plot(acc, label='valid acc t%.1f'%(0.1*(idx+1)))
         plt.plot(history["train_acc"], "k", label='train_acc' )
-        #plt.ylim(0.9, 1.0)
         plt.legend()
         plt.savefig(save_filename+"_acc.png")
         plt.show()
@@ -466,10 +452,8 @@ def plotResult(model, save_filename, task):
         # plot epoch AUC
         epoch_valid_AUC = numpy.array(history["valid_AUC"]).T
         for idx,AUC in enumerate(epoch_valid_AUC):
-            #plt.plot(AUC, label='valid AUC L'+str(idx+1))
             plt.plot(AUC, label='valid AUC t%.1f'%(0.1*(idx+1)))
         plt.plot(history["train_AUC"], "k", label='train_AUC' )
-        #plt.ylim(0.9, 1.0)
         plt.legend()
         plt.savefig(save_filename+"_AUC.png")
         plt.show()
@@ -477,10 +461,7 @@ def plotResult(model, save_filename, task):
         # plot epoch entropy
         epoch_valid_entr = numpy.array(history["valid_entr"]).T
         for idx,entr in enumerate(epoch_valid_entr):
-            #plt.plot(entr, label='valid entr L'+str(idx+1))
             plt.plot(entr, label='valid entr t%.1f'%(0.1*(idx+1)))
-        #plt.plot(history["train_entr"], "k", label='train_entr' )
-        #plt.ylim(0.9, 1.0)
         plt.legend()
         plt.savefig(save_filename+"_entr.png")
         plt.show()
@@ -530,7 +511,7 @@ def get_word_vector(vocab, emb='glove'):
             tokens = line.rstrip().split(' ')
             if tokens[0] not in vocab.keys():
                 continue
-            data[tokens[0]] = np.array(tokens[1:], dtype=np.float32)
+            data[tokens[0]] = numpy.array(tokens[1:], dtype=numpy.float32)
     
     else:
         raise Exception('emb not implemented')
@@ -548,7 +529,8 @@ def get_word_vector(vocab, emb='glove'):
     return torch.stack(w, dim=0)
 
 def data_preprocessing(text, remove_stopword=False):
-
+    stop_words = set(stopwords.words('english'))
+    
     text = text.lower()
     text = re.sub('<.*?>', '', text)
     text = ''.join([c for c in text if c not in string.punctuation])
@@ -613,26 +595,14 @@ class Textset(Dataset):
             else:
                 text = " ".join(words[:]+["<pad>"]*(max_len-len(words)))
                 new_text.append(text)
-            """
-            if len(t) > max_len:
-                    t = t[:max_len]
-                    new_text.append(t)
-                else:
-                    new_text.append(t)
-            """
             
         self.x = new_text
         self.y = label
         self.vocab = vocab
         self.max_len = max_len
     def collate(self, batch):
-        
         x = [torch.tensor(x) for x,y in batch]
-        y = [y for x,y in batch]
-        #x[0] = nn.ConstantPad1d((0, self.max_len - x[0].shape[0]), 0)(x[0])
-
         x_tensor = nn.utils.rnn.pad_sequence(x, batch_first=True)
-        #print(x_tensor)
         y = torch.tensor(y)
         return x_tensor, y
 

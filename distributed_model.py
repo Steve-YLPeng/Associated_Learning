@@ -1,22 +1,156 @@
 import torch
 import torch.nn as nn
-from transformer.encoder import TransformerEncoder
 from torch.nn import ModuleList
 from typing import List
+from transformer.encoder import TransformerEncoder
 from torch.optim.lr_scheduler import ReduceLROnPlateau
-import math
 from utils import *
 
-### Layer component definition
-class AE(nn.Module):
+# Definition of component in AL Layer (Forward Encoder, AutoEncoder)
+class ENC(nn.Module):
+    '''
+    ENC Components:
+        f: Forward function for input X
+        b: Bridge function
+        cri: Loss function for associated loss ("ce","mse")
+
+    Forward Input:
+        x: Embeddings of features from previous layer
+        tgt: Embeddings of target labels from AE
+        
+    Forward Return:
+        enc_x: Embeddings of features after encoding
+        loss: Associated Loss
+    '''
     
-    ############################################
-    #   g: Forward function for input Y 
-    #       (Encoder of AutoEncoder)
-    #   h: Decoder of AutoEncoder
-    # cri: Loss function for AutoEncoder loss
-    ############################################
-    def __init__(self, inp_dim:int, out_dim:int, cri='ce', act=None):
+    def __init__(self, inp_dim:int, out_dim:int, lab_dim:int=128, f:str='emb', 
+                 n_heads:int=4, word_vec=None, bidirectional=True, conv:nn.Module=None):
+        '''
+        Args:
+            inp_dim - the input dimension size of x embeddings from the previous layer
+
+            out_dim - the output dimension size of x embeddings to the next layer
+
+            lab_dim - the dimension size of the label space (default is 128)
+
+            f - Determines the mode of the forward function, must be one of the following str:
+                - 'emb' for Embedding
+                - 'lstm' for Long Short-Term Memory
+                - 'trans' for Transformerfor Encoder
+                - 'linear' Linear encoder
+                - 'cnn' for Convolutional encoder
+
+            bidirectional - indicating bidirectional (for 'lstm' mode)
+
+            conv - customized forward function (for 'cnn' mode)
+
+            n_heads - num of self-attention heads (for 'trans' mode)
+            
+            word_vec - pretrained vocabulary vector (for 'emb' mode)
+        '''
+        super().__init__()
+
+        self.mode = f
+        if f == 'emb':
+            self.f = nn.Embedding(inp_dim, out_dim)
+            if word_vec is not None:
+                self.f = nn.Embedding.from_pretrained(word_vec, freeze=False)
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                nn.Tanh()
+            )
+        elif f == 'lstm':
+            self.f = nn.LSTM(inp_dim, out_dim, bidirectional=bidirectional, batch_first=True)
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                nn.Tanh()
+            )
+        elif f == 'trans':
+            self.f = TransformerEncoder(d_model=inp_dim, d_ff=out_dim, n_heads=n_heads)
+            self.b = nn.Sequential(
+                nn.Linear(inp_dim, lab_dim),
+                nn.Tanh()
+            )
+        elif f == 'linear':
+            self.f = nn.Sequential(
+                nn.Linear(inp_dim, out_dim),
+                nn.ELU(),
+            )
+            self.b = nn.Sequential(
+                nn.Linear(out_dim, lab_dim),
+                nn.Tanh(),
+            )
+        elif f == 'cnn':
+            flatten_size = out_dim
+            self.f = conv
+            self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
+
+        self.cri = nn.MSELoss()
+    
+    def forward(self, x, tgt, mask=None, hidden=None):
+        if self.mode == 'emb' :
+            enc_x = self.f(x.long())
+        elif self.mode == 'linear' :
+            enc_x = self.f(x)
+        elif self.mode == 'lstm':
+            enc_x, hidden = self.f(x, hidden)
+        elif self.mode == 'trans':
+            enc_x = self.f(x, mask=mask)            
+        elif self.mode == 'cnn':
+            enc_x = self.f(x)
+            
+        red_x = self.reduction(enc_x, mask, hidden)
+        red_x = self.b(red_x)
+        loss = self.cri(red_x, tgt)
+
+        return enc_x, loss, hidden, mask
+
+    def reduction(self, x, mask=None, hidden=None):
+        # process f's output to match the bridge function input
+        if self.mode == 'emb':
+            return x.mean(1)
+        elif self.mode == 'lstm':
+            (h,c) = hidden
+            _h = torch.sum(h, dim=0)
+            return _h
+        elif self.mode == 'trans':
+            denom = torch.sum(mask, -1, keepdim=True)
+            feat = torch.sum(x * mask.unsqueeze(-1), dim=1) / denom
+            return feat
+        elif self.mode == 'linear':
+            return x
+        elif self.mode == 'cnn':
+            return x
+ 
+
+class AE(nn.Module):
+    '''
+    ENC Components:
+        g: Forward function for input Y (Encoder of AutoEncoder)
+        h: Decoder of AutoEncoder
+        cri: Loss function for AutoEncoder loss
+
+    Forward Input:
+        x: Embeddings of target labels from previous layer
+        
+    Forward Return:
+        enc_x: Embeddings of target labels after encoding
+        loss: Autoencoder Loss
+    '''
+
+    def __init__(self, inp_dim:int, out_dim:int, cri:str='ce', act:List[nn.Module]=None):
+        '''
+        Args:
+            inp_dim - the input dimension size of y embeddings from the previous layer
+
+            out_dim - the output dimension size of y embeddings to the next layer
+
+            cri - Determines the type of loss function used for target labels, must be one of the following str:
+                - "ce" Cross Entropy (is only used in the first layer of AL)
+                - "mse" Mean-Square Error
+
+            act - [act_enc, act_dec] - Denotes the activation functions used in the Encoder and Decoder
+        '''
         super().__init__()
         
         if act == None:
@@ -27,7 +161,6 @@ class AE(nn.Module):
             if cri == 'ce':
                 self.h = nn.Sequential(
                     nn.Linear(out_dim, inp_dim),
-                    #nn.Tanh(),
                     nn.Sigmoid(),
                 )
                 self.cri = nn.CrossEntropyLoss()
@@ -73,100 +206,30 @@ class AE(nn.Module):
             loss = self.cri(rec_x, x)
             
         return enc_x, loss
-class ENC(nn.Module):
     
-    ############################################
-    #   f: Forward function for input X
-    #   b: Bridge function
-    # cri: Loss function for associated loss
-    ############################################
-    def __init__(self, inp_dim:int, out_dim:int, lab_dim:int=128, f='emb', 
-                 n_heads:int=4, word_vec=None, bidirectional=True, conv:nn.Module=None):
-        super().__init__()
 
-        self.mode = f
-        if f == 'emb':
-            self.f = nn.Embedding(inp_dim, out_dim)
-            if word_vec is not None:
-                self.f = nn.Embedding.from_pretrained(word_vec, freeze=False)
-            self.b = nn.Sequential(
-                nn.Linear(out_dim, lab_dim),
-                nn.Tanh()
-            )
-        elif f == 'lstm':
-            self.f = nn.LSTM(inp_dim, out_dim, bidirectional=bidirectional, batch_first=True)
-            self.b = nn.Sequential(
-                nn.Linear(out_dim, lab_dim),
-                nn.Tanh()
-            )
-        elif f == 'trans':
-            self.f = TransformerEncoder(d_model=inp_dim, d_ff=out_dim, n_heads=n_heads)
-            self.b = nn.Sequential(
-                nn.Linear(inp_dim, lab_dim),
-                nn.Tanh()
-            )
-        elif f == 'linear':
-            self.f = nn.Sequential(
-                nn.Linear(inp_dim, out_dim),
-                nn.ELU(),
-            )
-            self.b = nn.Sequential(
-                nn.Linear(out_dim, lab_dim),
-                nn.Tanh(),
-            )
-        elif f == 'cnn':
-            flatten_size = out_dim
-            self.f = conv
-            self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, 5*lab_dim), nn.Sigmoid(), nn.Linear(5*lab_dim, lab_dim), nn.Sigmoid())
-            #self.b = nn.Sequential(Flatten(), nn.Linear(flatten_size, lab_dim), nn.Sigmoid())
+# Definition of AL layers (Embedding, Linear, LSTM, Transformer)
+class ALLayer_Template(nn.Module):
+    def __init__(self, inp_dim:int, lab_dim:int, hid_dim:int, lr:float, class_num:int, ae_cri:str):
+        '''
+        Args:
+            inp_dim - the input dimension size of x embeddings from the previous layer
 
-        self.cri = nn.MSELoss()
-    
-    def forward(self, x, tgt, mask=None, hidden=None):
+            hid_dim - the output dimension size of x embeddings to the next layer
 
-        if self.mode == 'emb' :
-            enc_x = self.f(x.long())
-        elif self.mode == 'linear' :
-            enc_x = self.f(x)
-        elif self.mode == 'lstm':
-            enc_x, hidden = self.f(x, hidden)
-        elif self.mode == 'trans':
-            enc_x = self.f(x, mask=mask)            
-        #TODO
-        elif self.mode == 'cnn':
-            enc_x = self.f(x)
-            
-        red_x = self.reduction(enc_x, mask, hidden)
-        red_x = self.b(red_x)
-        loss = self.cri(red_x, tgt)
+            lab_dim - the dimension size of the label space
 
-        return enc_x, loss, hidden, mask
+            class_num - the number of classes in the classification task
 
-    def reduction(self, x, mask=None, hidden=None):
+            lr - Learning rate for optimizer
 
-        # to match bridge function
-        if self.mode == 'emb':
-            return x.mean(1)
+            ae_cri: Determines the type of loss function used in AE for target labels ("ce", "mse") 
+        '''
+        pass
 
-        elif self.mode == 'lstm':
-            (h,c) = hidden
-            _h = torch.sum(h, dim=0)
-            return _h
 
-        elif self.mode == 'trans':
-            denom = torch.sum(mask, -1, keepdim=True)
-            feat = torch.sum(x * mask.unsqueeze(-1), dim=1) / denom
-            return feat
-        
-        elif self.mode == 'linear':
-            return x
-        #TODO
-        elif self.mode == 'cnn':
-            return x
-        
-### AL layers definition
-class EMBLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, class_num=None, word_vec=None, ae_cri='ce'):
+class EMBLayer(ALLayer_Template):
+    def __init__(self, inp_dim:int, lab_dim:int, hid_dim:int, lr:float, class_num:int, word_vec=None, ae_cri:str='ce'):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='emb', word_vec=word_vec)
@@ -184,7 +247,7 @@ class EMBLayer(nn.Module):
         enc_y , ae_loss = self.ae(y)
         if self.training:
             ae_loss.backward()
-            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
@@ -192,14 +255,85 @@ class EMBLayer(nn.Module):
         enc_x, enc_loss, hidden, mask = self.enc(x, tgt, mask, h)
         if self.training:
             enc_loss.backward()
-            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
             self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
-        return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss, [hidden, mask]
 
-class TransLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None):
+
+class LinearLayer(ALLayer_Template):
+    def __init__(self, inp_dim:int, lab_dim:int, hid_dim:int, lr:float, out_dim:int=None, ae_cri:str='mse', ae_act:List[nn.Module]=None):
+        super().__init__()
+
+        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='linear')
+        if out_dim == None:
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
+        else:
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri, act=ae_act)
+    
+        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
+        self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
+
+    def forward(self, x, y):
+        self.ae_opt.zero_grad()
+        enc_y , ae_loss = self.ae(y)
+        if self.training:
+            ae_loss.backward()
+            nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
+    
+        self.enc_opt.zero_grad()
+        tgt = enc_y.detach()
+        enc_x, enc_loss, _, _ = self.enc(x, tgt)
+        if self.training:
+            enc_loss.backward()
+            nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
+
+        return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss
+    
+
+class LSTMLayer(ALLayer_Template):
+    def __init__(self, inp_dim:int, lab_dim:int, hid_dim:int, lr:float, out_dim:int=None, ae_cri:str='mse', ae_act:List[nn.Module]=None, bidirectional:bool=True):
+        super().__init__()
+
+        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='lstm', bidirectional=bidirectional)
+        if out_dim == None:
+            self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
+        else:
+            self.ae = AE(out_dim, lab_dim, cri=ae_cri, act=ae_act)
+    
+        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
+        self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
+        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
+        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
+
+    def forward(self, x, y, mask=None, h=None):
+        self.ae_opt.zero_grad()
+        enc_y , ae_loss = self.ae(y)
+        if self.training:
+            ae_loss.backward()
+            nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
+            self.ae_opt.step()
+    
+        self.enc_opt.zero_grad()
+        tgt = enc_y.detach()
+        enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
+        if self.training:
+            enc_loss.backward()
+            nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
+            self.enc_opt.step()
+
+        (h, c) = hidden        
+        hidden = (h.detach(), c.detach())
+
+        return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
+
+
+class TransLayer(ALLayer_Template):
+    def __init__(self, inp_dim:int, lab_dim:int, hid_dim:int, lr:float, out_dim:int=None, ae_cri:str='mse', ae_act:List[nn.Module]=None):
         super().__init__()
 
         self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='trans')
@@ -219,8 +353,7 @@ class TransLayer(nn.Module):
         enc_y , ae_loss = self.ae(y)
         if self.training:
             ae_loss.backward()
-            #nn.utils.clip_grad_norm_(self.ae.parameters(), 0.001)
-            #nn.utils.clip_grad_value_(self.parameters(), 0.0001)
+            nn.utils.clip_grad_norm_(self.ae.parameters(), 0.001)
             self.ae_opt.step()
     
         self.enc_opt.zero_grad()
@@ -228,96 +361,13 @@ class TransLayer(nn.Module):
         enc_x, enc_loss, h, mask = self.enc(x, tgt, mask=mask)
         if self.training:
             enc_loss.backward()
-            #nn.utils.clip_grad_norm_(self.enc.parameters(), 0.001)
-            #nn.utils.clip_grad_value_(self.parameters(), 0.0001)
+            nn.utils.clip_grad_norm_(self.enc.parameters(), 0.001)
             self.enc_opt.step()
 
         return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, mask        
-        return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss, mask        
-
-class LSTMLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None, bidirectional=True):
-        super().__init__()
-
-        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='lstm', bidirectional=bidirectional)
-        if out_dim == None:
-            self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
-        else:
-            self.ae = AE(out_dim, lab_dim, cri=ae_cri, act=ae_act)
     
-        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
-        self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
 
-    def forward(self, x, y, mask=None, h=None):
-
-        self.ae_opt.zero_grad()
-        enc_y , ae_loss = self.ae(y)
-        if self.training:
-            ae_loss.backward()
-            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-            self.ae_opt.step()
-    
-        self.enc_opt.zero_grad()
-        tgt = enc_y.detach()
-        enc_x, enc_loss, hidden, _ = self.enc(x, tgt, mask, h)
-        if self.training:
-            enc_loss.backward()
-            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-            self.enc_opt.step()
-        (h, c) = hidden
-        
-        #print(f"h {h.size()}")
-        #h = h.reshape(2, x.size(0), -1)
-        #print(f"h re {h.size()}")
-        
-        hidden = (h.detach(), c.detach())
-
-        return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss, [hidden, mask]
-        return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss, [hidden, mask]
-
-class LinearLayer(nn.Module):
-    def __init__(self, inp_dim, lab_dim, hid_dim, lr, out_dim=None, ae_cri='mse', ae_act=None):
-        super().__init__()
-
-        self.enc = ENC(inp_dim, hid_dim, lab_dim=lab_dim, f='linear')
-        if out_dim == None:
-            self.ae = AE(lab_dim, lab_dim, cri=ae_cri, act=ae_act)
-        else:
-            self.ae = AE(out_dim, lab_dim, cri=ae_cri, act=ae_act)
-    
-        self.ae_opt = torch.optim.Adam(self.ae.parameters(), lr=lr)
-        self.enc_opt = torch.optim.Adam(self.enc.parameters(), lr=lr)
-        self.ae_sche = ReduceLROnPlateau(self.ae_opt, mode="max", factor=0.8, patience=2)
-        self.enc_sche = ReduceLROnPlateau(self.enc_opt, mode="max", factor=0.8, patience=2)
-
-    def forward(self, x, y):
-
-        self.ae_opt.zero_grad()
-        enc_y , ae_loss = self.ae(y)
-        if self.training:
-            ae_loss.backward()
-            #nn.utils.clip_grad_norm_(self.ae.parameters(), 5)
-            self.ae_opt.step()
-    
-        self.enc_opt.zero_grad()
-        tgt = enc_y.detach()
-        enc_x, enc_loss, _, _ = self.enc(x, tgt)
-        if self.training:
-            enc_loss.backward()
-            #nn.utils.clip_grad_norm_(self.enc.parameters(), 5)
-            self.enc_opt.step()
-
-        return enc_x.detach(), enc_y.detach(), ae_loss, enc_loss
-        return enc_x.clone().detach(), enc_y.clone().detach(), ae_loss, enc_loss
-
-
-###########################################################
-# Definition of old version AL models for text classification. 
-# models:   
-#   TransModel, LSTMModel, 
-###########################################################
+# Definition of fixed-level AL models(old) for text classification (TransModel, LSTMModel)
 class TransModel(nn.Module):
     def __init__(self, vocab_size, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__()
@@ -404,11 +454,23 @@ class LSTMModel(nn.Module):
 ###########################################################
 # Definition of AL multi-layer models. 
 # models: 
-#   alModel(template), 
-#   TransformerModelML, LSTMModelML, LinearModelML
+#   ALModel_Template(template), 
+#   Transformer_AL, LSTM_AL, Linear_AL
 ###########################################################
-class alModel(nn.Module):
-    def __init__(self, num_layer, l1_dim, class_num, lab_dim, emb_dim=None):
+class ALModel_Template(nn.Module):
+    def __init__(self, num_layer:int, l1_dim:int, class_num:int, lab_dim:int, emb_dim:int=None):
+        '''
+        Args:
+            num_layer - num of layers in the AL model
+
+            emb_dim - the output dimension for the embedding layer
+
+            l1_dim - the output dimension for the encoder layer
+
+            class_num - the number of classes in the classification task
+            
+            lab_dim - the dimension size of the label space
+        '''
         super().__init__()
         self.num_layer = num_layer
         self.conf_type = "max"
@@ -451,7 +513,6 @@ class alModel(nn.Module):
                 if not parameter.requires_grad: continue
                 params = parameter.numel()
                 total_params+=params
-                #print(name, params)
             print(f"L{layer}f Total Trainable Params: {total_params}")
             
             m = self.layers[layer].enc.b
@@ -460,7 +521,6 @@ class alModel(nn.Module):
                 if not parameter.requires_grad: continue
                 params = parameter.numel()
                 total_params+=params
-                #print(name, params)
             print(f"L{layer}b Total Trainable Params: {total_params}")
             
             m = self.layers[layer].ae
@@ -469,11 +529,10 @@ class alModel(nn.Module):
                 if not parameter.requires_grad: continue
                 params = parameter.numel()
                 total_params+=params
-                #print(name, params)
             print(f"L{layer}ae Total Trainable Params: {total_params}")
             
     
-class TransformerModelML(alModel):    
+class Transformer_AL(ALModel_Template):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
                
@@ -508,7 +567,7 @@ class TransformerModelML(alModel):
         pad_mask = ~(x == 0)
         return pad_mask.cuda()
     
-    ### func for inference_adapt
+    # func for inference_adapt
     def layer_forward(self, x, idx, mask):
         if idx==0: # embed
             x_out = self.layers[idx].enc.f(x.long())          
@@ -609,7 +668,8 @@ class TransformerModelML(alModel):
             
         return y_out
     
-class LSTMModelML(alModel):    
+
+class LSTM_AL(ALModel_Template):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
              
@@ -647,7 +707,7 @@ class LSTMModelML(alModel):
                 
         return layer_loss
     
-    ### func for inference_adapt
+    # func for inference_adapt
     def layer_forward(self, x, idx, hidden):
         if idx==0: # embed
             x_out = self.layers[idx].enc.f(x.long())
@@ -763,7 +823,8 @@ class LSTMModelML(alModel):
             
         return y_out
 
-class LinearModelML(alModel):    
+
+class Linear_AL(ALModel_Template):    
     def __init__(self, vocab_size, num_layer, emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None):
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
              
@@ -794,7 +855,7 @@ class LinearModelML(alModel):
                 layer_loss.append([ae_out.item(), as_out.item()])
         return layer_loss
     
-    ### func for inference_adapt
+    # func for inference_adapt
     def layer_forward(self, x, idx):
         if idx==0: # embed
             x_out = self.layers[idx].enc.f(x.long())
@@ -885,9 +946,7 @@ class LinearModelML(alModel):
 # models: 
 #   LinearALRegress, LinearALCLS, LinearALsideCLS
 ###########################################################
-
-class LinearALRegress(alModel): 
-    
+class LinearALRegress(ALModel_Template): 
     def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
         super().__init__(num_layer, l1_dim, class_num, lab_dim)
               
@@ -942,15 +1001,13 @@ class LinearALRegress(alModel):
             
         return y_out
     
-class LinearALCLS(alModel):    
+class LinearALCLS(ALModel_Template):    
     def __init__(self, num_layer, feature_dim, class_num, l1_dim, lr, lab_dim=128):
         super().__init__(num_layer, l1_dim, class_num, lab_dim)
               
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
-                #act = [nn.Tanh(), nn.Tanh()]
-                #act = [nn.ELU(), nn.ELU()]
                 act = [nn.Tanh(),nn.Sigmoid()]
                 layer = LinearLayer(inp_dim=feature_dim, out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
@@ -997,7 +1054,7 @@ class LinearALCLS(alModel):
             
         return y_out
     
-class LinearALsideCLS(alModel):    
+class LinearALsideCLS(ALModel_Template):    
     def __init__(self, num_layer, side_dim:List[int], class_num, l1_dim, lr, lab_dim=128):
         super().__init__(num_layer, l1_dim, class_num, lab_dim)
         
@@ -1007,10 +1064,7 @@ class LinearALsideCLS(alModel):
         layers = ModuleList([])
         for idx in range(self.num_layer):
             if idx == 0:
-                #act = [nn.Tanh(), nn.Tanh()]
-                #act = [nn.ELU(), nn.ELU()]
                 act = [nn.Tanh(),nn.Sigmoid()]
-                #act = None 
                 layer = LinearLayer(inp_dim=side_dim[0], out_dim=class_num, 
                                     hid_dim=l1_dim, lab_dim=lab_dim, lr=lr, ae_cri='ce', ae_act=act)
             else:
@@ -1070,11 +1124,27 @@ class LinearALsideCLS(alModel):
 ###########################################################
 # Definition of AL sideinput model for text cls task. 
 # models: 
-#   alSideModel,
-#   LinearALsideText, TransformerALsideText, LSTMALsideText
+#   ALModel_Side_Template,
+#   Linear_AL_Side, Transformer_AL_Side, LSTM_AL_Side
 ###########################################################
-class alSideModel(alModel): 
-    def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
+class ALModel_Side_Template(ALModel_Template): 
+    def __init__(self, num_layer:int, side_dim:List[int], emb_dim:int, l1_dim:int, class_num:int, lab_dim=128, same_emb:bool=False):
+        '''
+        Args:
+            num_layer - num of layers in the AL model
+
+            side_dim: List[int] - Represents a list of dimensions or sizes for side layers
+
+            same_emb - indicating whether the embeddings are the same across layers (Default is False)
+
+            emb_dim - the output dimension for the embedding layer
+
+            l1_dim - the output dimension for the encoder layer
+
+            class_num - the number of classes in the classification task
+            
+            lab_dim - the dimension size of the label space
+        '''
         super().__init__(num_layer, l1_dim, class_num, lab_dim, emb_dim)
         assert num_layer == len(side_dim)
         assert emb_dim == l1_dim
@@ -1082,13 +1152,14 @@ class alSideModel(alModel):
         self.same_emb = same_emb
         self.emb_layers = ModuleList([])
         self.layers = ModuleList([])
+    
     def sidedata(self, x):
-        #return x
         return torch.split(x, self.side_dim, -1)
        
-class TransformerALsideText(alSideModel):    
+
+class Transformer_AL_Side(ALModel_Side_Template):    
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
-        super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
+        super().__init__(num_layer, side_dim, emb_dim, l1_dim, class_num, lab_dim, same_emb)
 
         # emb define
         if self.same_emb:
@@ -1271,9 +1342,10 @@ class TransformerALsideText(alSideModel):
             
         return y_out
         
-class LSTMALsideText(alSideModel):    
+
+class LSTM_AL_Side(ALModel_Side_Template):    
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
-        super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
+        super().__init__(num_layer, side_dim, emb_dim, l1_dim, class_num, lab_dim, same_emb)
         
         self.bidirectional = False
         
@@ -1449,9 +1521,10 @@ class LSTMALsideText(alSideModel):
             
         return y_out
 
-class LinearALsideText(alSideModel): 
+
+class Linear_AL_Side(ALModel_Side_Template): 
     def __init__(self, vocab_size, num_layer, side_dim:List[int], emb_dim, l1_dim, lr, class_num, lab_dim=128, word_vec=None, same_emb=False):
-        super().__init__(vocab_size, num_layer, side_dim, emb_dim, l1_dim, lr, class_num, lab_dim, word_vec, same_emb)
+        super().__init__(num_layer, side_dim, emb_dim, l1_dim, class_num, lab_dim, same_emb)
         
         # emb
         if self.same_emb:

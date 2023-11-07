@@ -110,7 +110,7 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="image",):
 
 def main():
     
-    ### start of init
+    # start of init
     
     init_start_time = time.process_time()
     args = get_args()
@@ -133,13 +133,13 @@ def main():
         if args.model == 'VGG_AL':
             model = VGG_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
         if args.model == 'resnet_AL':
-            model = resnet18_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
-        if args.model == 'CNN_AL_side':
-            model = CNN_AL_side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
-        if args.model == 'VGG_AL_side':
-            model = VGG_AL_side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
-        if args.model == 'resnet_AL_side':
-            model = resnet_AL_side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+            model = ResNet_AL(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+        if args.model == 'CNN_AL_Side':
+            model = CNN_AL_Side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+        if args.model == 'VGG_AL_Side':
+            model = VGG_AL_Side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
+        if args.model == 'ResNet_AL_Side':
+            model = ResNet_AL_Side(num_layer=args.num_layer, l1_dim=args.l1_dim, lr=args.lr, class_num=class_num, lab_dim=args.label_emb)
             
             
     if args.load_dir != None:
@@ -155,7 +155,7 @@ def main():
     print('Start Training')
     total_train_time = time.process_time()
     
-    ### start of training/validation
+    # start of training/validation
     
     if args.task == "image":
         for max_depth in range(4):
@@ -174,7 +174,7 @@ def main():
                 
                 with torch.no_grad():
                     
-                    ### shortcut testing
+                    # shortcut testing
                     
                     for layer in range(model.num_layer):
                         ep_test_start_time = time.process_time()
@@ -193,7 +193,7 @@ def main():
                                 print("Save ckpt to", f'{save_path}_m{max_depth}.pt', " ,ep",epoch)
                                 torch.save(model.state_dict(), f'{save_path}_m{max_depth}.pt')
                             
-                    ### adaptive testing    
+                    # adaptive testing    
                     test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
                     for threshold in test_threshold:
                         gc.collect()

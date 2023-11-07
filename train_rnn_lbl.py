@@ -113,7 +113,7 @@ def test(model:alModel, data_loader:DataLoader, shortcut=None, task="text"):
 
 def main():
     
-    ### start of init
+    # start of init
     
     init_start_time = time.process_time()
     args = get_args()
@@ -132,19 +132,19 @@ def main():
         word_vec = get_word_vector(vocab, args.word_vec)
         
         if args.model == 'lstmal':
-            model = LSTMModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = LSTM_AL(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'linearal':
-            model = LinearModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = Linear_AL(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'transformeral':
-            model = TransformerModelML(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
+            model = Transformer_AL(vocab_size=len(vocab), num_layer=args.num_layer, emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'transformeralside':
-            model = TransformerALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
+            model = Transformer_AL_Side(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
                                           emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'linearalside':
-            model = LinearALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
+            model = Linear_AL_Side(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
                                           emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         elif args.model == 'lstmalside':
-            model = LSTMALsideText(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
+            model = LSTM_AL_Side(vocab_size=len(vocab), num_layer=args.num_layer, side_dim=args.side_dim, same_emb=args.same_emb,
                                           emb_dim=args.emb_dim, l1_dim=args.l1_dim, lab_dim=args.label_emb, class_num=class_num, word_vec=word_vec, lr=args.lr)
         
     if args.load_dir != None:
@@ -160,7 +160,7 @@ def main():
     print('Start Training')
     total_train_time = time.process_time()
     
-    ### start of training/validation
+    # start of training/validation
     
     if args.task == "text":
 
@@ -179,7 +179,7 @@ def main():
                 
                 with torch.no_grad():
                     
-                    ### shortcut testing
+                    # shortcut testing
                     for layer in range(model.num_layer):
                         ep_test_start_time = time.process_time()
                         acc = test(model, valid_loader, shortcut=layer+1, task=args.task)
@@ -196,7 +196,7 @@ def main():
                             print("Save ckpt to", f'{save_path}_m{max_depth}.pt', " ,ep",epoch)
                             torch.save(model.state_dict(), f'{save_path}_m{max_depth}.pt')
 
-                    ### adaptive testing    
+                    # adaptive testing    
                     test_threshold = [.1,.2,.3,.4,.5,.6,.7,.8,.9] 
                     for threshold in test_threshold:
                         gc.collect()
